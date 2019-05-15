@@ -34,16 +34,18 @@ syntax keyword orgDone DONE contained
 syntax cluster orgHeadlineItems    contains=orgHeadlineStars,orgHeadlinePriority,orgHeadlineTags
 syntax region  orgHeadline
       \ matchgroup=orgHeadlineStars start=/^\*\+/ end=/$/
-      \ contains=@orgHeadlineItems,@orgTodoKeywords nextgroup=orgPlanning,orgSection skipnl
+      \ contains=@orgHeadlineItems,@orgTodoKeywords nextgroup=orgPlanning,orgPropertyDrawer,orgSection skipnl
 
-syntax match orgHeadlineStars    contained /^\*\+/
+syntax match orgHeadlineStars    contained /^\*\+/ contains=orgConcealedStars
+" https://stackoverflow.com/questions/49932880/replace-concealed-characters-with-a-space
+" syntax match orgConcealedStars   contained /^\*\+/me=e-1
 syntax match orgHeadlinePriority contained /\(\[#\a\]\)/
 syntax match orgHeadlineTags     contained /:\%([[:alnum:]_@#%]*:\)\+/
 
 " TODO: get headline nextgroup to work here
-syntax match orgPlanning contained /^\s*DEADLINE:.*/ contains=orgTimestamp nextgroup=orgSection
-syntax match orgPlanning contained /^\s*SCHEDULED:.*/ contains=orgTimestamp nextgroup=orgSection
-syntax match orgPlanning contained /^\s*CLOSED:.*/ contains=orgTimestamp nextgroup=orgSection
+syntax match orgPlanning contained /^\s*DEADLINE:.*/  contains=orgTimestamp nextgroup=orgSection,orgPropertyDrawer
+syntax match orgPlanning contained /^\s*SCHEDULED:.*/ contains=orgTimestamp nextgroup=orgSection,orgPropertyDrawer
+syntax match orgPlanning contained /^\s*CLOSED:.*/    contains=orgTimestamp nextgroup=orgSection,orgPropertyDrawer
 
 " TODO: all these. Add default
 highlight link orgHeadlineStars Number
@@ -121,9 +123,9 @@ hi link orgGreaterBlockEnd SpecialChar
 " CONTENTS
 " :END:
 
-syntax match orgDrawerBegin /^:\S\+:/ contains=orgDrawerName nextgroup=orgDrawerName skipempty
-syntax match orgDrawerName /:\zs\S\+\ze:/ contained
-syntax match orgDrawerEnd /^:\zsEND\ze:/ contained
+" syntax match orgDrawerBegin /^:\S\+:/ contains=orgDrawerName nextgroup=orgDrawerName skipempty
+" syntax match orgDrawerName /:\zs\S\+\ze:/ contained
+" syntax match orgDrawerEnd /^:\zsEND\ze:/ contained
 " Contents: any element except another drawer
 " syntax region orgDrawerContents matchgroup=orgDrawerEnd start='^' end='' contained keepend
 "             \ contains=@orgGreaterElements,@orgElements
@@ -184,8 +186,8 @@ hi link orgFootnoteDefContents Identifier
 " TODO nest greater elements and inlinetasks
 
 syntax region orgListItem matchgroup=orgListLeader
-      \ start=/^\z(\s*\)\zs[-+]/ start=/^\z(\s*\)\zs\w[.)]/ start=/^\z(\s\+\)\zs\*/
-      \ end=/\ze\n\z1\S/ end=/\ze\n^$\n^$/ end=/\ze\n\z1\@!\S/
+      \ start=/^\z(\s*\)\zs[-+]/ start=/^\z(\s*\)\zs\(\d\+\|\a\)[.)]/ start=/^\z(\s\+\)\zs\*/
+      \ end=/\ze\n\z1\S/ end=/\ze\n^$\n^$/ end=/\ze\n\z1\@!/
       \ contains=orgListItem,orgListCheck,orgListTag keepend
 syntax match orgListCheck  contained nextgroup=orgListTag              skipwhite /\(\[[xX -]\]\)/
 syntax match orgListTag /\(\w\|\s\)*::/ contained
@@ -201,8 +203,12 @@ hi link orgListTag SpecialComment
 " :PROPERTIES:
 " CONTENTS
 " :END:
-syntax region orgPropertyDrawer start=/^:PROPERTIES:$/ end=/^:END:$/ contains=orgNodeProperty
-syntax match orgNodeProperty /:\S\+[^+]: \S$/
+syntax region orgPropertyDrawer contained matchgroup=orgPropertyDrawerEnds start=/^:PROPERTIES:$/ end=/^:END:$/ contains=orgNodeProperty
+syntax region orgNodeProperty   contained matchgroup=orgPropertyName       start=/^:\S\+[^+]:/    end=/$/       keepend oneline
+
+" hi link orgNodeProperty SpecialComment
+hi link orgPropertyDrawerEnds Comment
+hi link orgPropertyName Identifier
 " }}}
 
 " }}}

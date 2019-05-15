@@ -24,9 +24,16 @@ nmap <buffer> yu <Plug>(org-up-heading)
 nmap <buffer> gO <Plug>(org-open-headline-above)
 nmap <buffer> go <Plug>(org-open-headline-below)
 
+vmap <buffer> ah <Plug>(org-visual-a-headline)
+vmap <buffer> ih <Plug>(org-visual-inner-headline)
+omap <buffer> ah <Plug>(org-operator-a-headline)
+omap <buffer> ih <Plug>(org-operator-inner-headline)
 
-" Keepers:
-nmap <buffer> ]h <Plug>(org-next-headline)
-nmap <buffer> [h <Plug>(org-prev-headline)
-nmap <buffer> ]H <Plug>(org-next-headline-same-level)
-nmap <buffer> [H <Plug>(org-prev-headline-same-level)
+nmap <buffer> ]h <Plug>(org-cycle-todo)
+nmap <buffer> [h <Plug>(org-backcycle-todo)
+
+" Keepers: ?
+nmap <buffer> ]] <Plug>(org-next-headline)
+nmap <buffer> [[ <Plug>(org-prev-headline)
+nmap <buffer> ][ <Plug>(org-next-headline-same-level)
+nmap <buffer> [] <Plug>(org-prev-headline-same-level)

@@ -19,19 +19,22 @@ nnoremap <silent> <Plug>(org-add-checkbox)           :call org#add_checkbox()<CR
 nnoremap <silent> <Plug>(org-remove-checkbox)        :call org#remove_checkbox()<CR>
 nnoremap <silent> <Plug>(org-add-or-remove-checkbox) :call org#add_or_remove_checkbox()<CR>
 
-nnoremap <silent> <Plug>(org-cycle-todo) :call org#cycle_todo_keyword(-1)<CR>
-nnoremap <silent> <Plug>(org-cycle-todo) :call org#cycle_todo_keyword(1)<CR>
+nnoremap <silent> <Plug>(org-cycle-todo)     :call org#cycle_todo_keyword(1)<CR>
+nnoremap <silent> <Plug>(org-backcycle-todo) :call org#cycle_todo_keyword(-1)<CR>
 
 " Motions:
-nnoremap <silent> <Plug>(org-next-headline) :<C-u>call org#headline(v:count1, 1, 0)<CR>
-nnoremap <silent> <Plug>(org-prev-headline) :<C-u>call org#headline(v:count1, -1, 0)<CR>
+nnoremap <silent> <Plug>(org-next-headline) :<C-u>call org#motion_headline(v:count1, 1, 0)<CR>
+nnoremap <silent> <Plug>(org-prev-headline) :<C-u>call org#motion_headline(v:count1, -1, 0)<CR>
 
 " :h :map-<script> :map-<unique>
-nnoremap <silent> <Plug>(org-next-headline-same-level) :<C-u>call org#headline(v:count1, 1, 1)<CR>
-nnoremap <silent> <Plug>(org-prev-headline-same-level) :<C-u>call org#headline(v:count1, -1, 1)<CR>
-nnoremap <silent> <Plug>(org-up-heading)               :call org#up_heading()<CR>
+nnoremap <silent> <Plug>(org-next-headline-same-level) :<C-u>call org#motion_headline(v:count1, 1, 1)<CR>
+nnoremap <silent> <Plug>(org-prev-headline-same-level) :<C-u>call org#motion_headline(v:count1, -1, 1)<CR>
 
-" Should these have 
+vnoremap <silent> <Plug>(org-visual-a-headline)       :<C-u>call org#visual_headline(0)<CR>
+vnoremap <silent> <Plug>(org-visual-inner-headline)   :<C-u>call org#visual_headline(1)<CR>
+onoremap <silent> <Plug>(org-operator-a-headline)     :<C-u>call org#operator_headline(0)<CR>
+onoremap <silent> <Plug>(org-operator-inner-headline) :<C-u>call org#operator_headline(1)<CR>
+
 nnoremap <silent> <Plug>(org-open-headline-above) :call org#open_headline_above()<CR>
 nnoremap <silent> <Plug>(org-open-headline-below) :call org#open_headline_below()<CR>
 
