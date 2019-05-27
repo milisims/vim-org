@@ -277,8 +277,11 @@ function! org#reorder_list() abort
   if !is_ordered_listitem('.')
     return
   endif
-  " TODO: too easy to use g<C-a> for me to care right now.
+  " TODO too easy to use g<C-a> for me to care right now.
 endfunction
+
+" function! function_name() abort
+" endfunction
 
 " checkbox functions {{{
 
@@ -407,13 +410,10 @@ endfunction
 
 function! org#motion_headline(count1, direction, same_level) abort
   normal! m`
+  let l:flags = a:direction > 0 ? '' : 'b'
+  let l:level = a:same_level ? org#get_headline_level('.') : 0
   for l:i in range(a:count1)
-    if a:direction >= 0
-      let l:lnum = org#get_next_headline('.', a:same_level)
-    else
-      let l:lnum = org#get_prev_headline('.', a:same_level)
-    endif
-    execute l:lnum
+      execute org#find_headline('.', l:level, l:flags)
   endfor
   normal! 0
 endfunction

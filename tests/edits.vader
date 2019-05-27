@@ -1,0 +1,197 @@
+" Open headline above {{{
+
+Given org (No headlines):
+  Text
+
+Do (Open headline above):
+  \<Plug>(org-open-headline-above)headline\<Esc>
+
+Expect org (headline above everything):
+  * headline
+
+  Text
+
+Given org (headline below text):
+  Text
+  * A headline
+
+Do (open headline above the headline):
+  G\<Plug>(org-open-headline-above)headline\<Esc>
+
+Expect org (A new headline between text and old headline):
+  Text
+
+  * headline
+
+  * A headline
+
+Given org (A lonely headline):
+  * A headline
+
+Do (TODO open headline above only headline):
+  \<Plug>(org-open-headline-above)headline\<Esc>
+
+" TODO is this inconsistent with next test?
+Expect org (Two headlines):
+  * headline
+  * A headline
+
+Given org (Two headlines, no space):
+  * A headline
+  * A headline
+
+Do (Open above bottom headline):
+  2gg\<Plug>(org-open-headline-above)headline\<Esc>
+
+Expect org (Three headlines, no space):
+  * A headline
+  * headline
+  * A headline
+
+Given org (Three headlines no space):
+  * A headline
+  ** A headline
+  * A headline
+
+Do (Open headline above second and third (different levels)):
+  3gg\<Plug>(org-open-headline-above)headline\<Esc>
+  2gg\<Plug>(org-open-headline-above)headline\<Esc>
+
+Expect org (Text):
+  * A headline
+  ** headline
+  ** A headline
+  * headline
+  * A headline
+
+Given org (Headlines with spaced out text):
+  * A headline
+  text
+
+  * A headline
+
+Do (open headline above bottom headline):
+  G\<Plug>(org-open-headline-above)headline\<Esc>
+
+Expect org (New headline with only one empty space added):
+  * A headline
+  text
+
+  * headline
+
+  * A headline
+
+" }}}
+" Open headline below {{{
+
+Given org (No headlines):
+  Text
+
+Do (Open headline below):
+  \<Plug>(org-open-headline-below)headline\<Esc>
+
+Expect org (headline below everything):
+  Text
+
+  * headline
+
+Given org (headline below text):
+  Text
+  * A headline
+
+Do (open headline below the headline):
+  gg\<Plug>(org-open-headline-below)headline\<Esc>
+
+Expect org (A new headline between text and old headline):
+  Text
+
+  * headline
+
+  * A headline
+
+Given org (A lonely headline):
+  * A headline
+
+Do (open headline below only headline):
+  \<Plug>(org-open-headline-below)headline\<Esc>
+
+" TODO is this inconsistent with next test?
+Expect org (Two headlines):
+  * A headline
+  * headline
+
+Given org (Two headlines, no space):
+  * A headline
+  * A headline
+
+Do (Open below bottom headline):
+  gg\<Plug>(org-open-headline-below)headline\<Esc>
+
+Expect org (Three headlines, no space):
+  * A headline
+  * headline
+  * A headline
+
+Given org (Three headlines no space):
+  * A headline
+  ** A headline
+  * A headline
+
+Do (Open headline below second and third (different levels)):
+  2gg\<Plug>(org-open-headline-below)headline\<Esc>
+  gg\<Plug>(org-open-headline-below)headline\<Esc>
+
+Expect org (Text):
+  * A headline
+  ** A headline
+  ** headline
+  * headline
+  * A headline
+
+Given org (Headlines with spaced out text):
+  * A headline
+  text
+
+  * A headline
+
+Do (open headline below bottom headline):
+  gg\<Plug>(org-open-headline-below)headline\<Esc>
+
+Expect org (New headline with only one empty space added):
+  * A headline
+  text
+
+  * headline
+
+  * A headline
+
+" }}}
+" Cycle todo keyword {{{
+
+Given org (No headlines):
+  #+TODO: A B | C D E
+  * A 2
+  * B 3
+  * C 4
+  * D 5
+  * E 6
+
+Do (Open headline below):
+  :let b:
+  2gg\<Plug>(org-cycle-todo)headline\<Esc>
+  3gg\<Plug>(org-cycle-todo)headline\<Esc>
+  4gg\<Plug>(org-cycle-todo)headline\<Esc>
+  5gg\<Plug>(org-cycle-todo)headline\<Esc>
+  6gg\<Plug>(org-cycle-todo)headline\<Esc>
+
+Expect org (headline below everything):
+  #+TODO: A B | C D E
+  * B 2
+  * C 3
+  * D 4
+  * E 5
+  * 6
+
+
+" }}}
+" vim: set fdm=marker

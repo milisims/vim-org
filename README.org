@@ -1,0 +1,290 @@
+
+The goal of this project is to provide vim a subset of emacs orgmode utility. (roadmap, short and
+long term goals). This project attempts to provide vim-like interfaces to the same thought
+processes behind orgmode, with similar convenience where appropriate.
+
+Why? because vim-orgmode puts orgmode into vim, rather than approaching the problem that orgmode
+solves using vim as a tool. Also, I wanted to organize myself better.
+
+This project does and will not match every possibility of org's syntax, but it will guarantee to
+match a subset of org syntax. Consequently, org tools should work on files produced that follow the
+syntax here.
+
+#+TODO: TODO FEEDBACK VERIFY | DONE CANCELED
+
+* Principles
+  - vim motions/text objects
+  - vim folding for visibility
+  - Add functions, not mappings where appropriate
+  - autocommands
+  - normalize keybinds so something-that-inserts usually starts with same thing
+
+The goal of this project is to provide vim a subset of emacs orgmode utility. (roadmap, short and
+long term goals). This project attempts to provide vim-like interfaces to the same thought
+processes behind orgmode, with similar convenience where appropriate.
+
+Why? because vim-orgmode puts orgmode into vim, rather than approaching the problem that orgmode
+solves using vim as a tool. Also, I wanted to organize myself better.
+
+This project does and will not match every possibility of org's syntax, but it will guarantee to
+match a subset of org syntax. Consequently, org tools should work on files produced that follow the
+syntax here.
+
+The goal of this project is syntax parity with [[http://orgmode.org/][emacs' org mode]], but *not* feature parity.
+
+* BASIC REQUIREMENTS
+** Agenda
+** Headline
+*** Insert above/below subtree
+** List
+** Refiling
+
+* TODO Functionality
+  - Document structure
+    - [ ] headline
+      - [X] insert todo keyword
+        - [X] cycle
+      - [X] text object: inner header, a header
+      - [ ] motions:
+        - [ ] if in list or header, go to the start of content of item
+        - [X] next header
+        - [X] next same header
+      - [X] function for insert header above/below
+    - [ ] lists
+      - [X] oO normal commands function as expected (add list item)
+      - [X] wrap around is non-list
+      - [X] indenting with pressing -+* followed by tab (snippet or imap)
+      - [ ] typing [ in start of list could insert [ ] automatically (snippet or imap)
+      - [ ] toggle check for visual region
+      - [ ] toggle checkbox for visual region
+      - [ ] text objects
+        - [ ] inner list, a list
+      - Auto manage sub/big lists checkboxes
+    - [ ] Visibility
+      - [ ] folding
+        - [ ] list items > 1 line
+        - [ ] headers
+    - [ ] move subtrees around.
+      - visual and normal map for moving
+  - [ ] refiling
+    - [ ] archiving
+      - [ ] define archive file
+      - [ ] Function to archive current headline
+      - [ ] function to open archive file
+  - [ ] scheduling
+    - [ ] add deadline / scheduling function
+    - [ ] add closed function
+  - [ ] conversions
+    - [ ] nolist / list / header
+  - agenda
+  - sparse tree (TEXT PROPERTIES. or expr)
+    - function for hiding unselected bits -- funcref
+    - regex
+    - properties
+    - tag search
+  - [ ] indentation
+    - lists indent using shiftwidth
+    - properties indent using ***s and whitespace from headline
+    - otherwise, 0 or -1
+  - capture
+    - command for opening
+    - templates
+  - links (internal)
+    - [ ] radio links - abbreviation
+      - [ ] autocommand on open and write
+    - motions and text objects
+  - [ ] syntax highlighting
+    - [ ] properties
+    - [ ] vim-SyntaxRange
+  - [ ] Annoy autocommand on focusgained
+
+** test
+
+* TODO Commands should all have completion!
+
+* Orgmode tutor!
+  - Could generate this based on current keymaps
+* recommended keybinds with alternative setup for keys that are in use
+* Vader tests
+* Recommendation on how to read code
+* API
+  - Notes on overriding default behaviors
+
+* Planned features for v0.1
+  - C-a/C-x to increment dates -- vim speeddating, see doc
+  - tags for navigation
+  - org mode comment for modelines for settings! https://orgmode.org/manual/Comment-lines.html
+
+  - tables : formatting
+  - links
+    - internal links (tag these)
+    - external links (document thoroughly)
+    - file link search options
+  - TODO items -- full support https://orgmode.org/manual/TODO-Items.html Caveats?
+    - Functions / plug keybinds for manipulation
+    - no support for properties YET
+
+* planned features
+  - dynamic blocks
+  - table spreadsheets
+  - links:
+    - radio targets
+    - abbreviations
+  - narrowing
+  - local settings
+    - file local
+    - tree local
+  - SNIPPETS! -- separate repository
+
+* org
+  - make note taking fundamental
+  - avoid separate tools for notes & planning
+  - notes -> organize -> tasks
+  - recommend reading intro
+
+  - CONTEXT DEPENDENT BINDINGS
+
+Critical v1.0 features
+  - easy restructuring : move up/down, promote and demote (>><<)
+  - parent tags get inherited (disable LATER)
+  - <PLUG>bindings to modify properties easily. **************** Good recommendations!
+  - date/time reading and writing (don't necessarily rely on speeddating)
+  - Capture! - template creation captured somewhere
+  - sparse trees - search for any tag
+    - agenda view - outline nodes into a flat list
+      - timer for today
+      - list for the week
+  - Table formatting
+  - test
+    - test
+
+* GTD
+  - Put items in basket
+
+  For each item in basket:
+  1. Categorize
+  2. Actionable?
+    - No: Trash or someDay/maybe or store as reference material
+  - Yes: Choose:
+    - If less than 2 minutes: Do it
+      - Else: Delegate or Defer
+** org files
+  - inbox.org
+  - [ ] somedaymaybe.org
+  - agendas.org
+  - goals.org
+* Schedule reviews!
+  - tasks     ~ daily
+  - projects  ~ weekly
+  - goals     ~ monthly
+  - vision    ~ annual
+
+* v0.1
+** Tags
+** headlines
+  - conceal stars in headline
+    - Priority management
+      - visibility: folding
+    + cycle subtree
+    * cycle globally
+      - robust folds and standard vim keybinds
+    - Tags
+    - Color headlines differently by default
+** headlines
+  - conceal stars in headline
+    - Priority management
+    - visibility: folding
+      - cycle subtree
+    - lol what
+      - cycle globally
+        - robust folds and standard vim keybinds
+    - Tags
+    - Color headlines differently by default
+
+** General
+  - date insertion -- use fuzzy autocomplete?
+    - cal output into buffer with hjklwmy commands to move around
+    - return inserts the date
+    - numbers go to cmd with a date selection
+** List features
+  - checkboxes (hierarchical, counter [/] [%])
+    - itemize to numbered conversion
+    - renumber automatically (aucmd)
+** Capture
+  - Easy way to define templates
+    - Only vim-wide binding
+    - date tree
+    - can use autocommands to capture information
+** Agenda and search
+** Export via Emacs
+** Tutorials - Wiki
+  - Set up capture
+    - Autocommands provided?
+** Property management
+** Footnotes
+** indenting
+  - code blocks should be doable
+    - <CR> behavior: insert prev. marker (-*+\d), if any are typed assume sub-list
+    - if <BS> is typed, first assume to just clear the marker, then standard
+
+* Functions
+  - Simple visibility cycling -- most done through standard bindings
+  - Add/select/remove tags
+  - promote/demote
+  - Todo cycling / assignment (count)
+* Autocommands / auto formatting
+  - list marker, reformat list
+
+* v0.2
+** Tables & Spreadsheets
+** time reporting & tracking
+  - thing
+    - test d09fa8s7 d0f9a78s 0d9f87 as09d8f7 a0s978d f0a9s87d f09a7s8d 0fa7s89d f0aa s078d9f as7daf
+      hello alskdj aslkdfj alsdkfj alskdfj aslkdfja
+      + test lol
+      2. hello
+
+
+
+Later:
+  - completion everywhere useful!
+  - Column view of properties -- vim style, with a buffer
+  - Spreadsheet editor
+  - basic math
+  - :h mysyntaxfile-add for customization
+
+  - Export/Publishing - Pandoc vs emacs - text output have integrated
+
+
+  - NOT fiddle-free
+
+Evolved software:
+  - keep simple core intact
+  - never impose unwanted complexity
+  - facilitates a learning and development process -- how?
+
+* Autocompletion
+  - linkwords
+
+
+
+* bindings from orgmode : https://orgmode.org/worg/orgcard.html
+  - s/tab -> visibility : za vim
+  - next/previous heading
+
+
+** Goals
+
+  - Extensibility via custom autocmd events and readable simple code for hacking
+  - Syntax parity with org mode
+  - Unsupported interface for simple calling emacs export functions - they're cool.
+  - Simple support for [[https://pandoc.org][pandoc]] exporting
+  - Syntax highlighting with snippets via [[https://vimhelp.org/textprop.txt.html][text-properties]]
+  - Visibility changes with folding and concealing
+  - provides navigation automatically with `:h fold-commands`
+  - Support vim keybindings to sensibly change the doc EXAMPLES PLEASE
+  - python table/spreadsheeting
+
+* Installation
+
+Use your favorite vim package install method. For exporting, emacs or pandoc is required.

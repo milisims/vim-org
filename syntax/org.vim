@@ -23,8 +23,10 @@ syntax cluster orgGreaterElements contains=orgHeadline,orgSection,orgGreaterBloc
 
 " syntax region orgSection contained start=/^\s/ end=/$\_^\*/
 
-syntax cluster orgTodoKeywords contains=orgTodo,orgDone
+syntax cluster orgTodoKeywords contains=orgTodo,orgNext,orgDone
 syntax keyword orgTodo TODO contained
+" TODO this should be not default
+syntax keyword orgNext NEXT contained
 syntax keyword orgDone DONE contained
 " TODO: Matchadd user defined keywords on write
 " STARS KEYWORD PRIORITY TITLE TAGS
@@ -34,7 +36,8 @@ syntax keyword orgDone DONE contained
 syntax cluster orgHeadlineItems    contains=orgHeadlineStars,orgHeadlinePriority,orgHeadlineTags
 syntax region  orgHeadline
       \ matchgroup=orgHeadlineStars start=/^\*\+/ end=/$/
-      \ contains=@orgHeadlineItems,@orgTodoKeywords nextgroup=orgPlanning,orgPropertyDrawer,orgSection skipnl
+      \ contains=@orgHeadlineItems,@orgTodoKeywords nextgroup=orgPlanning,orgPropertyDrawer,orgSection
+      \ keepend skipnl
 
 syntax match orgHeadlineStars    contained /^\*\+/ contains=orgConcealedStars
 " https://stackoverflow.com/questions/49932880/replace-concealed-characters-with-a-space
@@ -43,15 +46,16 @@ syntax match orgHeadlinePriority contained /\(\[#\a\]\)/
 syntax match orgHeadlineTags     contained /:\%([[:alnum:]_@#%]*:\)\+/
 
 " TODO: get headline nextgroup to work here
-syntax match orgPlanning contained /^\s*DEADLINE:.*/  contains=orgTimestamp nextgroup=orgSection,orgPropertyDrawer
-syntax match orgPlanning contained /^\s*SCHEDULED:.*/ contains=orgTimestamp nextgroup=orgSection,orgPropertyDrawer
-syntax match orgPlanning contained /^\s*CLOSED:.*/    contains=orgTimestamp nextgroup=orgSection,orgPropertyDrawer
+syntax match orgPlanning contained /^\s*DEADLINE:.*/  contains=orgTimestamp nextgroup=orgSection,orgPropertyDrawer skipnl
+syntax match orgPlanning contained /^\s*SCHEDULED:.*/ contains=orgTimestamp nextgroup=orgSection,orgPropertyDrawer skipnl
+syntax match orgPlanning contained /^\s*CLOSED:.*/    contains=orgTimestamp nextgroup=orgSection,orgPropertyDrawer skipnl
 
 " TODO: all these. Add default
 highlight link orgHeadlineStars Number
 highlight link orgHeadlinePriority Error
 highlight link orgHeadlineTags SpecialComment
 highlight link orgTodo Todo
+highlight link orgNext SpecialComment
 highlight link orgDone Conditional
 highlight link orgPlanning Comment
 " highlight link orgHeadline Comment
@@ -170,7 +174,7 @@ syntax match orgFootnoteDef /\[fn:[[:alnum:]-_]\+\]/ contains=orgFootnoteDefLabe
             \ nextgroup=orgFootnoteDefContents skipwhite
 syntax match orgFootnoteDefLabel /:\zs[[:alnum:]-_]\+/ contained
 syntax region orgFootnoteDefContents contained nextgroup=orgFootnoteDef,orgHeadline
-            \ start='.' end='\ze\n\%(^\*\|\[fn\|^$\n^$\)'
+            \ start='.' end='\ze\n\%(^\*\|\[fn\|^$\n^$\)' keepend
 " TODO: use multi end characters
 " CONTENTS can contain any element excepted another footnote definition.
 " It ends at the next footnote definition, the next headline,
@@ -203,8 +207,8 @@ hi link orgListTag SpecialComment
 " :PROPERTIES:
 " CONTENTS
 " :END:
-syntax region orgPropertyDrawer contained matchgroup=orgPropertyDrawerEnds start=/^:PROPERTIES:$/ end=/^:END:$/ contains=orgNodeProperty
-syntax region orgNodeProperty   contained matchgroup=orgPropertyName       start=/^:\S\+[^+]:/    end=/$/       keepend oneline
+syntax region orgPropertyDrawer contained keepend matchgroup=orgPropertyDrawerEnds start=/^:PROPERTIES:$/ end=/^:END:$/ contains=orgNodeProperty
+syntax region orgNodeProperty   contained keepend matchgroup=orgPropertyName       start=/^:\S\+[^+]:/    end=/$/       oneline
 
 " hi link orgNodeProperty SpecialComment
 hi link orgPropertyDrawerEnds Comment

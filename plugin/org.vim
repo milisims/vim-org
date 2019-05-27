@@ -1,18 +1,18 @@
 " setlocal spell
 
-inoremap <silent> <Plug>(org-o)   :call org#newline('o')<CR>a
-inoremap <silent> <Plug>(org-O)   :call org#newline('O')<CR>a
-inoremap <silent> <Plug>(org-BS)  <C-r>=org#format("\<BS>")<CR>
-inoremap <silent> <Plug>(org-CR)  <C-r>=org#format("\<CR>")<CR>
-inoremap <silent> <Plug>(org--)   <C-r>=org#format('-')<CR>
-inoremap <silent> <Plug>(org-+)   <C-r>=org#format('+')<CR>
-inoremap <silent> <Plug>(org-*)   <C-r>=org#format('*')<CR>
-inoremap <silent> <Plug>(org-.)   <C-r>=org#format('.')<CR>
-inoremap <silent> <Plug>(org-))   <C-r>=org#format(')')<CR>
-inoremap <silent> <Plug>(org-C-t) <C-r>=org#indent()<CR>
-inoremap <silent> <Plug>(org-C-d) <C-r>=org#dedent()<CR>
-nnoremap <silent> <Plug>(org-<)   :<C-u>set opfunc=org#dedent<CR>g@
-nnoremap <silent> <Plug>(org->)   :<C-u>set opfunc=org#indent<CR>g@
+" inoremap <silent> <Plug>(org-o)   :call org#newline('o')<CR>a
+" inoremap <silent> <Plug>(org-O)   :call org#newline('O')<CR>a
+" inoremap <silent> <Plug>(org-BS)  <C-r>=org#format("\<BS>")<CR>
+" inoremap <silent> <Plug>(org-CR)  <C-r>=org#format("\<CR>")<CR>
+" inoremap <silent> <Plug>(org--)   <C-r>=org#format('-')<CR>
+" inoremap <silent> <Plug>(org-+)   <C-r>=org#format('+')<CR>
+" inoremap <silent> <Plug>(org-*)   <C-r>=org#format('*')<CR>
+" inoremap <silent> <Plug>(org-.)   <C-r>=org#format('.')<CR>
+" inoremap <silent> <Plug>(org-))   <C-r>=org#format(')')<CR>
+" inoremap <silent> <Plug>(org-C-t) <C-r>=org#indent()<CR>
+" inoremap <silent> <Plug>(org-C-d) <C-r>=org#dedent()<CR>
+" nnoremap <silent> <Plug>(org-<)   :<C-u>set opfunc=org#dedent<CR>g@
+" nnoremap <silent> <Plug>(org->)   :<C-u>set opfunc=org#indent<CR>g@
 
 nnoremap <silent> <Plug>(org-toggle-check)           :call org#toggle_check()<CR>
 nnoremap <silent> <Plug>(org-add-checkbox)           :call org#add_checkbox()<CR>
@@ -63,11 +63,11 @@ onoremap <silent> <Plug>(org-inner-subtree)         <Nop>
 " onoremap <silent> <Plug>(org-a-checkbox)     <Nop>
 " onoremap <silent> <Plug>(org-a-checkbox)     <Nop>
 
-augroup org
-  autocmd!
-  " TODO: just check for cache in function, rather than forcing the autoload to laod
-  autocmd BufRead *.org call org#build_keyword_cache()
-augroup END
+" augroup org
+"   autocmd!
+"   " TODO: just check for cache in function, rather than forcing the autoload to laod
+"   autocmd BufRead *.org call org#build_keyword_cache()
+" augroup END
 
 "TODO:
 " Commands:

@@ -1,0 +1,87 @@
+* list test
+  - item
+    - item also
+    item
+  - item
+   item
+  not item
+  not item
+
+
+* TODO [#a] My Life in plain text :thisistag:
+  - [X] birth
+  - [-] life [50%]
+        - [X] use vim
+        - [ ] get everything else done
+* Write minutes of last meeting <2014-08-08 Fri>        :work:
+** DONE John said
+   this
+
+** TODO Mary said
+
+#+NAME: VALUE
+#+NAME[OPTION]: This should not work
+#+CAPTION[OPTION]: This should work
+#+ATTR_TEST: VALUE
+
+** WAITING What did Mark say?
+   [[http://example.com/here/is/the/recording][1st recording]]
+   [[http://example.com/here/is/the/recording][2nd recording]]
+
+#+BEGIN_NAME PARAMETERS
+CONTENTS
+#+END_NAME
+
+:NAME:
+CONTENTS
+:END:
+
+#+BEGIN: NAME PARAMETERS
+CONTENTS
+#+END:
+
+[fn:LABEL] CONTENTS
+
+
+* this is a thing
+- list item 1
+- list item 2
+
+1. item 1
+2. [X] item 2
+   - [ ] some tag :: item 2.1
+   - some tag :: item 2.1
+     hello
+
+
+{ start
+line 1
+line 2
+end }
+
+
+* DONE Some folding headline 1        :one:
+SCHEDULED: <2019-04-12 Fri 07:15 .+1d>
+** Folded
+*** Even more folded
+* Some folding headline 2
+** Folded           :two:
+*** Even more folded
+* Some folding headline 3
+** Folded
+*** Even more folded            :three:
+* Some folding headline 4
+** Folded
+*** Even more folded
+    completely unfolded
+
+
+Uses:
+notes
+todo list
+day planner
+GTD
+Time planning and accounting.
+
+Would-be-nice
+- clocking system
