@@ -11,10 +11,10 @@ Execute (org#parse_todo_keywords(1)):
 " }}}
 " Headlines {{{
 
-Execute (org#has_headline(text)):
-  Assert org#has_headline('* This is a headline')
-  Assert org#has_headline('** This is a headline')
-  Assert !org#has_headline(' * This is not a headline')
+Execute (org#headline#checktext(text)):
+  Assert org#headline#checktext('* This is a headline')
+  Assert org#headline#checktext('** This is a headline')
+  Assert !org#headline#checktext(' * This is not a headline')
 
 Given org (Some headlines):
   * A headline            1
@@ -23,12 +23,12 @@ Given org (Some headlines):
 
   ** Another headline     5
 
-Execute (org#is_headline(lnum)):
-  Assert org#is_headline(1)
-  Assert !org#is_headline(2)
-  Assert !org#is_headline(3)
-  Assert !org#is_headline(4)
-  Assert org#is_headline(5)
+Execute (org#headline#checkline(lnum)):
+  Assert org#headline#checkline(1)
+  Assert !org#headline#checkline(2)
+  Assert !org#headline#checkline(3)
+  Assert !org#headline#checkline(4)
+  Assert org#headline#checkline(5)
 
 Given org (Headlines with todo):
   #+TODO: A | B
@@ -37,14 +37,14 @@ Given org (Headlines with todo):
   * C A headline 4
 
 " fails the added things, as this doesn't create a 'file' and we're caching.
-Execute (org#has_headline_todo_keyword):
-  Assert org#has_headline_todo_keyword(getline(2))
-  Assert org#has_headline_todo_keyword(getline(3))
-  Assert !org#has_headline_todo_keyword(getline(4))
+Execute (org#headline#has_keyword):
+  Assert org#headline#has_keyword(getline(2))
+  Assert org#headline#has_keyword(getline(3))
+  Assert !org#headline#has_keyword(getline(4))
 
-Execute (org#get_headline_todo_keyword(text)):
-  AssertEqual 'A', org#get_headline_todo_keyword(getline(2))
-  AssertEqual 'B', org#get_headline_todo_keyword(getline(3))
+Execute (org#headline#keyword(text)):
+  AssertEqual 'A', org#headline#keyword(getline(2))
+  AssertEqual 'B', org#headline#keyword(getline(3))
 
 Given org (Headlines):
   Not a headline 1
@@ -52,85 +52,88 @@ Given org (Headlines):
   Not a headline 3
   ** A headline  4
   * A headline   5
+  Not a headline 6
 
-Execute (org#find_headline(lnum, same_level)):
-  AssertEqual 2, org#find_headline(1, 0)
-  AssertEqual 4, org#find_headline(2, 0)
-  AssertEqual 4, org#find_headline(3, 0)
-  AssertEqual 5, org#find_headline(4, 0)
-  AssertEqual 0, org#find_headline(5, 0, 'W')
-  AssertEqual 2, org#find_headline(5, 0, 'w')
-  AssertEqual 2, org#find_headline(1, 2)
-  AssertEqual 5, org#find_headline(2, 1)
-  AssertEqual 5, org#find_headline(1, 0, 'bw')
-  AssertEqual 0, org#find_headline(2, 0, 'bW')
-  AssertEqual 2, org#find_headline(3, 0, 'b')
-  AssertEqual 2, org#find_headline(4, 0, 'b')
-  AssertEqual 4, org#find_headline(5, 0, 'b')
-  AssertEqual 2, org#find_headline(5, 1, 'b')
+Execute (org#headline#find(lnum, same_level)):
+  AssertEqual 2, org#headline#find(1, 0)
+  AssertEqual 2, org#headline#find(2, 0)
+  AssertEqual 4, org#headline#find(3, 0)
+  AssertEqual 4, org#headline#find(4, 0)
+  AssertEqual 5, org#headline#find(5, 0, 'W')
+  AssertEqual 2, org#headline#find(6, 0, 'w')
+  AssertEqual 2, org#headline#find(1, 2)
+  AssertEqual 5, org#headline#find(3, 1)
+  AssertEqual 5, org#headline#find(1, 0, 'bw')
+  AssertEqual 0, org#headline#find(1, 0, 'bW')
+  AssertEqual 2, org#headline#find(2, 0, 'bW')
+  AssertEqual 2, org#headline#find(3, 0, 'b')
+  AssertEqual 4, org#headline#find(4, 0, 'b')
+  AssertEqual 5, org#headline#find(5, 0, 'b')
+  AssertEqual 5, org#headline#find(6, 1, 'b')
+  AssertEqual 2, org#headline#find(4, 1, 'b')
 
-Execute (org#get_headline_level(lnum, ...)):
-  AssertEqual 0,      org#get_headline_level(1)
-  AssertEqual [1, 2], org#get_headline_level(2, 1)
-  AssertEqual [1, 2], org#get_headline_level(3, 1)
-  AssertEqual 2,      org#get_headline_level(4)
-  AssertEqual 1,      org#get_headline_level(5)
+Execute (org#headline#level(lnum, ...)):
+  AssertEqual 0,      org#headline#level(1)
+  AssertEqual [1, 2], org#headline#level(2, 1)
+  AssertEqual [1, 2], org#headline#level(3, 1)
+  AssertEqual 2,      org#headline#level(4)
+  AssertEqual 1,      org#headline#level(5)
 
-Execute (org#get_headline_range(lnum, inner)):
-  AssertEqual 0,      org#get_headline_range(1)[0]
-  AssertEqual [2, 4], org#get_headline_range(2)
-  AssertEqual [2, 4], org#get_headline_range(3, 0)
-  AssertEqual [4, 4], org#get_headline_range(4, 0)
-  AssertEqual [5, 5], org#get_headline_range(5, 0)
-  AssertEqual [3, 4], org#get_headline_range(2, 1)
-  AssertEqual [3, 4], org#get_headline_range(3, 1)
-  AssertEqual 0,      org#get_headline_range(4, 1)[0]
+Execute (org#headline#range(lnum, inner)):
+  AssertEqual 0,      org#headline#range(1)[0]
+  AssertEqual [2, 4], org#headline#range(2)
+  AssertEqual [2, 4], org#headline#range(3, 0)
+  AssertEqual [4, 4], org#headline#range(4, 0)
+  AssertEqual [5, 5], org#headline#range(5, 0)
+  AssertEqual [3, 4], org#headline#range(2, 1)
+  AssertEqual [3, 4], org#headline#range(3, 1)
+  AssertEqual 0,      org#headline#range(4, 1)[0]
 
-" Execute (org#motion_headline(count1, direction, same)):
+" " " Execute (org#motion_headline(count1, direction, same)):
 
-" Execute (org#operator_headline(inner)):
+" " " Execute (org#operator_headline(inner)):
 
-" Execute (org#visual_headline(inner)):
+" " " Execute (org#visual_headline(inner)):
 
 
-" }}}
+" " " }}}
 
 " Lists {{{
 
-Execute (org#has_checkbox(text)):
-  Assert  org#has_checkbox('- [ ] List item')
-  Assert !org#has_checkbox('[ ] Not list item')
+Execute (org#list#has_checkbox(text)):
+  Assert  org#list#has_checkbox('- [ ] List item')
+  Assert !org#list#has_checkbox('[ ] Not list item')
 
-Execute (org#has_checked_box(text)):
-  Assert !org#has_checked_box('- [ ] List item')
-  Assert  org#has_checked_box('- [x] List item')
-  Assert  org#has_checked_box('- [X] List item')
-  Assert !org#has_checked_box('[X] Not list item')
+Execute (org#list#has_check(text)):
+  Assert !org#list#has_check('- [ ] List item')
+  Assert  org#list#has_check('- [x] List item')
+  Assert  org#list#has_check('- [X] List item')
+  Assert !org#list#has_check('[X] Not list item')
 
-Execute (org#has_ordered_list_header(text)):
-  Assert  org#has_ordered_list_header(' 1) list')
-  Assert  org#has_ordered_list_header(' 1. list')
-  Assert  org#has_ordered_list_header(' a) list')
-  Assert  org#has_ordered_list_header(' a. list')
-  Assert  org#has_ordered_list_header(' 10) list')
-  Assert !org#has_ordered_list_header(' aa) list')
+Execute (org#list#has_ordered_header(text)):
+  Assert  org#list#has_ordered_header(' 1) list')
+  Assert  org#list#has_ordered_header(' 1. list')
+  Assert  org#list#has_ordered_header(' a) list')
+  Assert  org#list#has_ordered_header(' a. list')
+  Assert  org#list#has_ordered_header(' 10) list')
+  Assert !org#list#has_ordered_header(' aa) list')
 
-Execute (org#has_bullet_list_header(text)):
-  Assert  org#has_bullet_list_header('- list')
-  Assert  org#has_bullet_list_header('-')
-  Assert !org#has_bullet_list_header('*')
-  Assert  org#has_bullet_list_header(' *')
-  Assert  org#has_bullet_list_header(' + list')
+Execute (org#list#has_bullet_header(text)):
+  Assert  org#list#has_bullet_header('- list')
+  Assert  org#list#has_bullet_header('-')
+  Assert !org#list#has_bullet_header('*')
+  Assert  org#list#has_bullet_header(' *')
+  Assert  org#list#has_bullet_header(' + list')
 
-Execute (org#has_list_header(text)):
-  Assert  org#has_list_header('- list')
-  Assert  org#has_list_header('-')
-  Assert !org#has_list_header('*')
-  Assert  org#has_list_header(' *')
-  Assert  org#has_list_header(' + list')
-  Assert  org#has_list_header(' 1) list')
-  Assert  org#has_list_header(' a) list')
-  Assert  org#has_list_header(' 10) list')
+Execute (org#list#has_header(text)):
+  Assert  org#list#has_header('- list')
+  Assert  org#list#has_header('-')
+  Assert !org#list#has_header('*')
+  Assert  org#list#has_header(' *')
+  Assert  org#list#has_header(' + list')
+  Assert  org#list#has_header(' 1) list')
+  Assert  org#list#has_header(' a) list')
+  Assert  org#list#has_header(' 10) list')
 
 Given org (List);
 - List item        1
@@ -146,118 +149,118 @@ Given org (List);
       - nest item  11
       a) nest item 12
 
-Execute (org#get_listitem_range(lnum)):
-  AssertEqual [1, 1], org#get_listitem_range(1)
-  AssertEqual [2, 4], org#get_listitem_range(2)
-  AssertEqual [2, 4], org#get_listitem_range(3)
-  AssertEqual [2, 4], org#get_listitem_range(4)
-  AssertEqual [0, 0], org#get_listitem_range(5)
-  AssertEqual [6, 6], org#get_listitem_range(6)
-  AssertEqual [7, 7], org#get_listitem_range(7)
-  AssertEqual [8, 12], org#get_listitem_range(8)
-  AssertEqual [8, 12], org#get_listitem_range(9)
-  AssertEqual [10, 12], org#get_listitem_range(10)
-  AssertEqual [11, 11], org#get_listitem_range(11)
-  AssertEqual [12, 12], org#get_listitem_range(12)
+Execute (org#list#item_range(lnum)):
+  AssertEqual [1, 1], org#list#item_range(1)
+  AssertEqual [2, 4], org#list#item_range(2)
+  AssertEqual [2, 4], org#list#item_range(3)
+  AssertEqual [2, 4], org#list#item_range(4)
+  AssertEqual [0, 0], org#list#item_range(5)
+  AssertEqual [6, 6], org#list#item_range(6)
+  AssertEqual [7, 7], org#list#item_range(7)
+  AssertEqual [8, 12], org#list#item_range(8)
+  AssertEqual [8, 12], org#list#item_range(9)
+  AssertEqual [10, 12], org#list#item_range(10)
+  AssertEqual [11, 11], org#list#item_range(11)
+  AssertEqual [12, 12], org#list#item_range(12)
 
-Execute (org#get_listitem_start(lnum)):
-  AssertEqual 1, org#get_listitem_start(1)
-  AssertEqual 2, org#get_listitem_start(2)
-  AssertEqual 2, org#get_listitem_start(3)
-  AssertEqual 2, org#get_listitem_start(4)
-  AssertEqual 0, org#get_listitem_start(5)
-  AssertEqual 6, org#get_listitem_start(6)
-  AssertEqual 7, org#get_listitem_start(7)
-  AssertEqual 8, org#get_listitem_start(8)
-  AssertEqual 8, org#get_listitem_start(9)
-  AssertEqual 10, org#get_listitem_start(10)
-  AssertEqual 11, org#get_listitem_start(11)
-  AssertEqual 12, org#get_listitem_start(12)
+Execute (org#list#item_start(lnum)):
+  AssertEqual 1, org#list#item_start(1)
+  AssertEqual 2, org#list#item_start(2)
+  AssertEqual 2, org#list#item_start(3)
+  AssertEqual 2, org#list#item_start(4)
+  AssertEqual 0, org#list#item_start(5)
+  AssertEqual 6, org#list#item_start(6)
+  AssertEqual 7, org#list#item_start(7)
+  AssertEqual 8, org#list#item_start(8)
+  AssertEqual 8, org#list#item_start(9)
+  AssertEqual 10, org#list#item_start(10)
+  AssertEqual 11, org#list#item_start(11)
+  AssertEqual 12, org#list#item_start(12)
 
-Execute (org#get_listitem_end(lnum)):
-  AssertEqual 1, org#get_listitem_end(1)
-  AssertEqual 4, org#get_listitem_end(2)
-  AssertEqual 4, org#get_listitem_end(3)
-  AssertEqual 4, org#get_listitem_end(4)
-  AssertEqual 0, org#get_listitem_end(5)
-  AssertEqual 6, org#get_listitem_end(6)
-  AssertEqual 7, org#get_listitem_end(7)
-  AssertEqual 12, org#get_listitem_end(8)
-  AssertEqual 12, org#get_listitem_end(9)
-  AssertEqual 12, org#get_listitem_end(10)
-  AssertEqual 11, org#get_listitem_end(11)
-  AssertEqual 12, org#get_listitem_end(12)
+Execute (org#list#item_end(lnum)):
+  AssertEqual 1, org#list#item_end(1)
+  AssertEqual 4, org#list#item_end(2)
+  AssertEqual 4, org#list#item_end(3)
+  AssertEqual 4, org#list#item_end(4)
+  AssertEqual 0, org#list#item_end(5)
+  AssertEqual 6, org#list#item_end(6)
+  AssertEqual 7, org#list#item_end(7)
+  AssertEqual 12, org#list#item_end(8)
+  AssertEqual 12, org#list#item_end(9)
+  AssertEqual 12, org#list#item_end(10)
+  AssertEqual 11, org#list#item_end(11)
+  AssertEqual 12, org#list#item_end(12)
 
-Execute (org#is_ordered_listitem(lnum)):
-  Assert !org#is_ordered_listitem(1)
-  Assert !org#is_ordered_listitem(2)
-  Assert !org#is_ordered_listitem(3)
-  Assert !org#is_ordered_listitem(4)
-  Assert !org#is_ordered_listitem(5)
-  Assert !org#is_ordered_listitem(6)
-  Assert  org#is_ordered_listitem(7)
-  Assert  org#is_ordered_listitem(8)
-  Assert  org#is_ordered_listitem(9)
+Execute (org#list#item_is_ordered(lnum)):
+  Assert !org#list#item_is_ordered(1)
+  Assert !org#list#item_is_ordered(2)
+  Assert !org#list#item_is_ordered(3)
+  Assert !org#list#item_is_ordered(4)
+  Assert !org#list#item_is_ordered(5)
+  Assert !org#list#item_is_ordered(6)
+  Assert  org#list#item_is_ordered(7)
+  Assert  org#list#item_is_ordered(8)
+  Assert  org#list#item_is_ordered(9)
   " TODO: decide if 10 and 11 should return true, because parent
-  Assert !org#is_ordered_listitem(10)
-  Assert !org#is_ordered_listitem(11)
-  Assert  org#is_ordered_listitem(12)
+  Assert !org#list#item_is_ordered(10)
+  Assert !org#list#item_is_ordered(11)
+  Assert  org#list#item_is_ordered(12)
 
-Execute (org#is_bullet_listitem(lnum)):
-  Assert  org#is_bullet_listitem(1)
-  Assert  org#is_bullet_listitem(2)
-  Assert  org#is_bullet_listitem(3)
-  Assert  org#is_bullet_listitem(4)
-  Assert !org#is_bullet_listitem(5)
-  Assert  org#is_bullet_listitem(6)
-  Assert !org#is_bullet_listitem(7)
-  Assert !org#is_bullet_listitem(8)
-  Assert !org#is_bullet_listitem(9)
-  Assert  org#is_bullet_listitem(10)
-  Assert  org#is_bullet_listitem(11)
-  Assert !org#is_bullet_listitem(12)
+Execute (org#list#item_is_bullet(lnum)):
+  Assert  org#list#item_is_bullet(1)
+  Assert  org#list#item_is_bullet(2)
+  Assert  org#list#item_is_bullet(3)
+  Assert  org#list#item_is_bullet(4)
+  Assert !org#list#item_is_bullet(5)
+  Assert  org#list#item_is_bullet(6)
+  Assert !org#list#item_is_bullet(7)
+  Assert !org#list#item_is_bullet(8)
+  Assert !org#list#item_is_bullet(9)
+  Assert  org#list#item_is_bullet(10)
+  Assert  org#list#item_is_bullet(11)
+  Assert !org#list#item_is_bullet(12)
 
-Execute (org#is_listitem(lnum)):
-  Assert  org#is_listitem(1)
-  Assert  org#is_listitem(2)
-  Assert  org#is_listitem(3)
-  Assert  org#is_listitem(4)
-  Assert !org#is_listitem(5)
-  Assert  org#is_listitem(6)
-  Assert  org#is_listitem(7)
-  Assert  org#is_listitem(8)
-  Assert  org#is_listitem(9)
-  Assert  org#is_listitem(10)
-  Assert  org#is_listitem(11)
-  Assert  org#is_listitem(12)
+Execute (org#list#is_item(lnum)):
+  Assert  org#list#is_item(1)
+  Assert  org#list#is_item(2)
+  Assert  org#list#is_item(3)
+  Assert  org#list#is_item(4)
+  Assert !org#list#is_item(5)
+  Assert  org#list#is_item(6)
+  Assert  org#list#is_item(7)
+  Assert  org#list#is_item(8)
+  Assert  org#list#is_item(9)
+  Assert  org#list#is_item(10)
+  Assert  org#list#is_item(11)
+  Assert  org#list#is_item(12)
 
-Execute (org#get_listitem_parent_range(lnum)):
-  AssertEqual [0, 0], org#get_listitem_parent_range(1)
-  AssertEqual [0, 0], org#get_listitem_parent_range(2)
-  AssertEqual [0, 0], org#get_listitem_parent_range(3)
-  AssertEqual [0, 0], org#get_listitem_parent_range(4)
-  AssertEqual [0, 0], org#get_listitem_parent_range(5)
-  AssertEqual [0, 0], org#get_listitem_parent_range(6)
-  AssertEqual [0, 0], org#get_listitem_parent_range(7)
-  AssertEqual [0, 0], org#get_listitem_parent_range(8)
-  AssertEqual [0, 0], org#get_listitem_parent_range(9)
-  AssertEqual [8, 12], org#get_listitem_parent_range(10)
-  AssertEqual [10, 12], org#get_listitem_parent_range(11)
-  AssertEqual [10, 12], org#get_listitem_parent_range(12)
+Execute (org#list#parent_item_range(lnum)):
+  AssertEqual [0, 0], org#list#parent_item_range(1)
+  AssertEqual [0, 0], org#list#parent_item_range(2)
+  AssertEqual [0, 0], org#list#parent_item_range(3)
+  AssertEqual [0, 0], org#list#parent_item_range(4)
+  AssertEqual [0, 0], org#list#parent_item_range(5)
+  AssertEqual [0, 0], org#list#parent_item_range(6)
+  AssertEqual [0, 0], org#list#parent_item_range(7)
+  AssertEqual [0, 0], org#list#parent_item_range(8)
+  AssertEqual [0, 0], org#list#parent_item_range(9)
+  AssertEqual [8, 12], org#list#parent_item_range(10)
+  AssertEqual [10, 12], org#list#parent_item_range(11)
+  AssertEqual [10, 12], org#list#parent_item_range(12)
 
-Execute (org#get_list_level(lnum)):
-  AssertEqual 1, org#get_list_level(1)
-  AssertEqual 1, org#get_list_level(2)
-  AssertEqual 1, org#get_list_level(3)
-  AssertEqual 1, org#get_list_level(4)
-  AssertEqual 0, org#get_list_level(5)
-  AssertEqual 1, org#get_list_level(6)
-  AssertEqual 1, org#get_list_level(7)
-  AssertEqual 1, org#get_list_level(8)
-  AssertEqual 1, org#get_list_level(9)
-  AssertEqual 2, org#get_list_level(10)
-  AssertEqual 3, org#get_list_level(11)
-  AssertEqual 3, org#get_list_level(12)
+Execute (org#list#level(lnum)):
+  AssertEqual 1, org#list#level(1)
+  AssertEqual 1, org#list#level(2)
+  AssertEqual 1, org#list#level(3)
+  AssertEqual 1, org#list#level(4)
+  AssertEqual 0, org#list#level(5)
+  AssertEqual 1, org#list#level(6)
+  AssertEqual 1, org#list#level(7)
+  AssertEqual 1, org#list#level(8)
+  AssertEqual 1, org#list#level(9)
+  AssertEqual 2, org#list#level(10)
+  AssertEqual 3, org#list#level(11)
+  AssertEqual 3, org#list#level(12)
 
 Given org (Lists):
   - Item      1
@@ -275,70 +278,58 @@ Given org (Lists):
 
   - Item      14
 
-Execute (org#find_listitem(lnum, 0)):
-  AssertEqual 3, org#find_listitem(1, 0)
-  AssertEqual 3, org#find_listitem(2, 0)
-  AssertEqual 5, org#find_listitem(3, 0)
-  AssertEqual 5, org#find_listitem(4, 0)
-  AssertEqual 6, org#find_listitem(5, 0)
-  AssertEqual 7, org#find_listitem(6, 0)
-  AssertEqual 8, org#find_listitem(7, 0)
-  AssertEqual 9, org#find_listitem(8, 0)
-  AssertEqual 10, org#find_listitem(9, 0)
-  AssertEqual 11, org#find_listitem(10, 0)
-  AssertEqual 14, org#find_listitem(11, 0)
+Execute (org#list#find(lnum, 0)):
+  AssertEqual 1, org#list#find(1, 0)
+  AssertEqual 3, org#list#find(2, 0)
+  AssertEqual 3, org#list#find(3, 0)
+  AssertEqual 5, org#list#find(4, 0)
+  AssertEqual 5, org#list#find(5, 0)
+  AssertEqual 6, org#list#find(6, 0)
+  AssertEqual 7, org#list#find(7, 0)
+  AssertEqual 8, org#list#find(8, 0)
+  AssertEqual 9, org#list#find(9, 0)
+  AssertEqual 10, org#list#find(10, 0)
+  AssertEqual 11, org#list#find(11, 0)
+  AssertEqual 14, org#list#find(12, 0)
 
-Execute (org#find_listitem(lnum, 1 1)):
-  AssertEqual 3, search('  -')
+  AssertEqual 3, org#list#find(1, 1)
+  AssertEqual 3, org#list#find(2, 1)
+  AssertEqual 5, org#list#find(3, 1)
+  AssertEqual 5, org#list#find(4, 1)
+  AssertEqual 0, org#list#find(5, 1)
+  AssertEqual 0, org#list#find(6, 1)
+  AssertEqual 10, org#list#find(7, 1)
+  AssertEqual 9, org#list#find(8, 1)
+  AssertEqual 0, org#list#find(9, 1)
+  AssertEqual 0, org#list#find(10, 1)
+  AssertEqual 0, org#list#find(11, 1)
 
-  AssertEqual 3, org#find_listitem(1, 1)
-Execute (org#find_listitem(lnum, 1 2)):
-  AssertEqual 3, org#find_listitem(2, 1)
-Execute (org#find_listitem(lnum, 1 3)):
-  AssertEqual 5, org#find_listitem(3, 1)
-Execute (org#find_listitem(lnum, 1 4)):
-  AssertEqual 5, org#find_listitem(4, 1)
-Execute (org#find_listitem(lnum, 1 5)):
-  AssertEqual 0, org#find_listitem(5, 1)
-Execute (org#find_listitem(lnum, 1 6)):
-  AssertEqual 0, org#find_listitem(6, 1)
-Execute (org#find_listitem(lnum, 1 7)):
-  AssertEqual 10, org#find_listitem(7, 1)
-Execute (org#find_listitem(lnum, 1 8)):
-  AssertEqual 9, org#find_listitem(8, 1)
-Execute (org#find_listitem(lnum, 1 9)):
-  AssertEqual 0, org#find_listitem(9, 1)
-Execute (org#find_listitem(lnum, 1 10)):
-  AssertEqual 0, org#find_listitem(10, 1)
-Execute (org#find_listitem(lnum, 1 11)):
-  AssertEqual 0, org#find_listitem(11, 1)
+" " Execute (org#get_prev_listitem(lnum, ...)):
 
-" Execute (org#get_prev_listitem(lnum, ...)):
+" " }}}
 
-" }}}
+" " Execute (org#renumber_list()):
 
-" Execute (org#renumber_list()):
+" " Execute (org#list#checkbox_add()):
 
-" Execute (org#add_checkbox()):
+" " Execute (org#list#checkbox_remove()):
 
-" Execute (org#remove_checkbox()):
+" " Execute (org#list#checkbox_toggle()):
 
-" Execute (org#add_or_remove_checkbox()):
+" " Execute (org#list#check_toggle()):
 
-" Execute (org#toggle_check()):
+" " Execute (org#headline#cycle_keyword(direction)):
 
-" Execute (org#cycle_todo_keyword(direction)):
+" " Execute (org#motion_listitem(count1, direction, same)):
 
-" Execute (org#motion_listitem(count1, direction, same)):
+" " Execute (org#operator_list()):
 
-" Execute (org#operator_list()):
+" " Execute (org#get_todo_keywords()):
 
-" Execute (org#get_todo_keywords()):
+" " Execute (org#build_keyword_cache()):
 
-" Execute (org#build_keyword_cache()):
+" " Execute (org#parse_todo_keywords(line)):
 
-" Execute (org#parse_todo_keywords(line)):
+" " Execute (org#formatexpr()):
 
-" Execute (org#formatexpr()):
-
-" vim: set fdm=marker
+" " vim: set fdm=marker

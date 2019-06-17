@@ -14,13 +14,13 @@
 " nnoremap <silent> <Plug>(org-<)   :<C-u>set opfunc=org#dedent<CR>g@
 " nnoremap <silent> <Plug>(org->)   :<C-u>set opfunc=org#indent<CR>g@
 
-nnoremap <silent> <Plug>(org-toggle-check)           :call org#toggle_check()<CR>
-nnoremap <silent> <Plug>(org-add-checkbox)           :call org#add_checkbox()<CR>
-nnoremap <silent> <Plug>(org-remove-checkbox)        :call org#remove_checkbox()<CR>
-nnoremap <silent> <Plug>(org-add-or-remove-checkbox) :call org#add_or_remove_checkbox()<CR>
+nnoremap <silent> <Plug>(org-toggle-check)           :call org#list#check_toggle()<CR>
+nnoremap <silent> <Plug>(org-add-checkbox)           :call org#list#checkbox_add()<CR>
+nnoremap <silent> <Plug>(org-remove-checkbox)        :call org#list#checkbox_remove()<CR>
+nnoremap <silent> <Plug>(org-add-or-remove-checkbox) :call org#list#checkbox_toggle()<CR>
 
-nnoremap <silent> <Plug>(org-cycle-todo)     :call org#cycle_todo_keyword(1)<CR>
-nnoremap <silent> <Plug>(org-backcycle-todo) :call org#cycle_todo_keyword(-1)<CR>
+nnoremap <silent> <Plug>(org-cycle-todo)     :call org#headline#cycle_keyword(1)<CR>
+nnoremap <silent> <Plug>(org-backcycle-todo) :call org#headline#cycle_keyword(-1)<CR>
 
 " Motions:
 nnoremap <silent> <Plug>(org-next-headline) :<C-u>call org#motion_headline(v:count1, 1, 0)<CR>
@@ -35,8 +35,8 @@ vnoremap <silent> <Plug>(org-visual-inner-headline)   :<C-u>call org#visual_head
 onoremap <silent> <Plug>(org-operator-a-headline)     :<C-u>call org#operator_headline(0)<CR>
 onoremap <silent> <Plug>(org-operator-inner-headline) :<C-u>call org#operator_headline(1)<CR>
 
-nnoremap <silent> <Plug>(org-open-headline-above) :call org#open_headline_above()<CR>
-nnoremap <silent> <Plug>(org-open-headline-below) :call org#open_headline_below()<CR>
+nnoremap <silent> <Plug>(org-open-headline-above) :call org#headline#open_above()<CR>
+nnoremap <silent> <Plug>(org-open-headline-below) :call org#headline#open_below()<CR>
 
 " org-goto is like searching in vim.
 

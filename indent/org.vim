@@ -19,13 +19,13 @@ function! GetOrgIndent() abort
   if l:line =~# '^\*\|^\s*#'  " if headline or #
     echom 'is.hl'
     return 0
-  elseif org#is_listitem(l:lnum)
-    echom 'is.li' org#has_list_header(l:line)
-    let l:indent = max([org#get_list_level(l:lnum), 1]) * &shiftwidth
-    return org#has_list_header(l:line) ? l:indent : l:indent + 2
-  elseif org#is_listitem(l:lnum - 1)
+  elseif org#list#is_item(l:lnum)
+    echom 'is.li' org#list#has_header(l:line)
+    let l:indent = max([org#list#level(l:lnum), 1]) * &shiftwidth
+    return org#list#has_header(l:line) ? l:indent : l:indent + 2
+  elseif org#list#is_item(l:lnum - 1)
     echom 'is.pl' . v:char
-    return (org#get_list_level(l:lnum - 1) + 1) * &shiftwidth
+    return (org#list#level(l:lnum - 1) + 1) * &shiftwidth
   elseif l:prev_line =~# '^\*\+'
     echom 'is.ph'
     return 0
