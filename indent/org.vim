@@ -15,24 +15,17 @@ function! GetOrgIndent() abort
   let l:lnum = v:lnum
   let l:line = getline(l:lnum)
   let l:prev_line = getline(l:lnum - 1)
-  messages clear
   if l:line =~# '^\*\|^\s*#'  " if headline or #
-    echom 'is.hl'
     return 0
   elseif org#list#is_item(l:lnum)
-    echom 'is.li' org#list#has_header(l:line)
     let l:indent = max([org#list#level(l:lnum), 1]) * &shiftwidth
     return org#list#has_header(l:line) ? l:indent : l:indent + 2
   elseif org#list#is_item(l:lnum - 1)
-    echom 'is.pl' . v:char
     return (org#list#level(l:lnum - 1) + 1) * &shiftwidth
   elseif l:prev_line =~# '^\*\+'
-    echom 'is.ph'
     return 0
   elseif l:prev_line =~# '^$'
-    echom 'is.pe -' . l:prev_line . '-'
     return indent(l:lnum)
   endif
-  echom 'is.else'
   return indent(l:lnum - 1)
 endfunction
