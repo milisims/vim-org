@@ -14,29 +14,33 @@
 " nnoremap <silent> <Plug>(org-<)   :<C-u>set opfunc=org#dedent<CR>g@
 " nnoremap <silent> <Plug>(org->)   :<C-u>set opfunc=org#indent<CR>g@
 
-nnoremap <silent> <Plug>(org-toggle-check)           :call org#list#check_toggle()<CR>
-nnoremap <silent> <Plug>(org-add-checkbox)           :call org#list#checkbox_add()<CR>
-nnoremap <silent> <Plug>(org-remove-checkbox)        :call org#list#checkbox_remove()<CR>
-nnoremap <silent> <Plug>(org-add-or-remove-checkbox) :call org#list#checkbox_toggle()<CR>
+" NAMING: org-ELEMENT[-MODIFIER][-ACTION][-MODIFIER]
+" No action is a selection or motion
+" Action can also describe a motion.
+" Modifier modifies the object
+nnoremap <silent> <Plug>(org-check-toggle)           :call org#list#check_toggle()<CR>
+nnoremap <silent> <Plug>(org-checkbox-add)           :call org#list#checkbox_add()<CR>
+nnoremap <silent> <Plug>(org-checkbox-remove)        :call org#list#checkbox_remove()<CR>
+nnoremap <silent> <Plug>(org-checkbox-toggle)        :call org#list#checkbox_toggle()<CR>
 
-nnoremap <silent> <Plug>(org-cycle-todo)     :call org#headline#cycle_keyword(1)<CR>
-nnoremap <silent> <Plug>(org-backcycle-todo) :call org#headline#cycle_keyword(-1)<CR>
+nnoremap <silent> <Plug>(org-todo-cycle)      :call org#headline#cycle_keyword(1)<CR>
+nnoremap <silent> <Plug>(org-todo-cycle-back) :call org#headline#cycle_keyword(-1)<CR>
 
 " Motions:
-nnoremap <silent> <Plug>(org-next-headline) :<C-u>call org#motion_headline(v:count1, 1, 0)<CR>
-nnoremap <silent> <Plug>(org-prev-headline) :<C-u>call org#motion_headline(v:count1, -1, 0)<CR>
+nnoremap <silent> <Plug>(org-headline-next) :<C-u>call org#motion_headline(v:count1, 1, 0)<CR>
+nnoremap <silent> <Plug>(org-headline-prev) :<C-u>call org#motion_headline(v:count1, -1, 0)<CR>
 
 " :h :map-<script> :map-<unique>
-nnoremap <silent> <Plug>(org-next-headline-same-level) :<C-u>call org#motion_headline(v:count1, 1, 1)<CR>
-nnoremap <silent> <Plug>(org-prev-headline-same-level) :<C-u>call org#motion_headline(v:count1, -1, 1)<CR>
+nnoremap <silent> <Plug>(org-headline-next-samelevel) :<C-u>call org#motion_headline(v:count1, 1, 1)<CR>
+nnoremap <silent> <Plug>(org-headline-prev-samelevel) :<C-u>call org#motion_headline(v:count1, -1, 1)<CR>
 
-vnoremap <silent> <Plug>(org-visual-a-headline)       :<C-u>call org#visual_headline(0)<CR>
-vnoremap <silent> <Plug>(org-visual-inner-headline)   :<C-u>call org#visual_headline(1)<CR>
-onoremap <silent> <Plug>(org-operator-a-headline)     :<C-u>call org#operator_headline(0)<CR>
-onoremap <silent> <Plug>(org-operator-inner-headline) :<C-u>call org#operator_headline(1)<CR>
+vnoremap <silent> <Plug>(org-section-visual-inner)    :<C-u>call org#visual_headline(1)<CR>
+vnoremap <silent> <Plug>(org-section-visual-around)   :<C-u>call org#visual_headline(0)<CR>
+onoremap <silent> <Plug>(org-section-operator-inner)  :<C-u>call org#operator_headline(1)<CR>
+onoremap <silent> <Plug>(org-section-operator-around) :<C-u>call org#operator_headline(0)<CR>
 
-nnoremap <silent> <Plug>(org-open-headline-above) :call org#headline#open_above()<CR>
-nnoremap <silent> <Plug>(org-open-headline-below) :call org#headline#open_below()<CR>
+nnoremap <silent> <Plug>(org-headline-open-above) :call org#headline#open_above()<CR>
+nnoremap <silent> <Plug>(org-headline-open-below) :call org#headline#open_below()<CR>
 
 " org-goto is like searching in vim.
 
@@ -75,5 +79,10 @@ onoremap <silent> <Plug>(org-inner-subtree)         <Nop>
 " create sparse tree: regexp, todo, todo-kwd (folds/unfolds automatically -- fold expr? manual?)
                 " jump to matches for the tree
 " Agenda
-" Capture (have good binding?)
-" List renumber
+" Capture
+
+" TODO:
+" Formatting:
+"   List renumber
+"   Tables
+"   Spacing headlines
