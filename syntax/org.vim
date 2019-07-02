@@ -12,7 +12,7 @@ syntax clear
 "    start in later positions.
 
 
-syntax cluster orgGreaterElements contains=orgHeadline,orgSection,orgGreaterBlock,orgDrawers
+syntax cluster orgGreaterElements contains=@orgHeadline,orgSection,orgGreaterBlock,orgDrawers
 
 " TODO: if not a headline, starting with stars must start with a comma
 
@@ -33,13 +33,53 @@ syntax keyword orgDone DONE contained
 " **** TODO [#A] COMMENT Title :tag:a2%:
 " FIXME this one is a comment!
 
-syntax cluster orgHeadlineItems    contains=orgHeadlineStars,orgHeadlinePriority,orgHeadlineTags
-syntax region  orgHeadline
-      \ matchgroup=orgHeadlineStars start=/^\*\+/ end=/$/
+
+syntax cluster orgHeadlineItems    contains=orgHeadlineStars,orgHeadlinePriority,orgHeadlineTags,orgHeadlineConcealedStars
+syntax cluster orgHeadline contains=orgHeadline1,orgHeadline2,orgHeadline3,orgHeadlineN
+
+syntax region orgHeadline1
+      \ matchgroup=orgHeadlineStars start=/^\*\{1}/ end=/$/
       \ contains=@orgHeadlineItems,@orgTodoKeywords nextgroup=orgPlanning,orgPropertyDrawer,orgSection
       \ keepend skipnl
 
-syntax match orgHeadlineStars    contained /^\*\+/ contains=orgConcealedStars
+syntax region orgHeadline2
+      \ matchgroup=orgHeadlineStars start=/^\*\{2}/ end=/$/
+      \ contains=@orgHeadlineItems,@orgTodoKeywords nextgroup=orgPlanning,orgPropertyDrawer,orgSection
+      \ keepend skipnl
+
+syntax region orgHeadline3
+      \ matchgroup=orgHeadlineStars start=/^\*\{3}/ end=/$/
+      \ contains=@orgHeadlineItems,@orgTodoKeywords nextgroup=orgPlanning,orgPropertyDrawer,orgSection
+      \ keepend skipnl
+
+syntax region orgHeadlineN
+      \ matchgroup=orgHeadlineStars start=/^\*\{4,}/ end=/$/
+      \ contains=@orgHeadlineItems,@orgTodoKeywords nextgroup=orgPlanning,orgPropertyDrawer,orgSection
+      \ keepend skipnl
+
+" syntax cluster orgHeadline contains=orgHeadline1,orgHeadline2,orgHeadline3,orgHeadlineN
+" syntax cluster orgHeadlineItems    contains=orgHeadlineStars,orgHeadlinePriority,orgHeadlineTags,orgHeadlineConcealedStars
+
+" Almost working:
+" syntax match orgHeadline1 /\(^\*\)\@=.*/
+"       \ contains=@orgHeadlineItems,@orgTodoKeywords nextgroup=orgPlanning,orgPropertyDrawer,orgSection
+"       \ keepend skipnl
+
+" syntax match orgHeadline2 /\(^\*\*\)\@=.*/
+"       \ contains=@orgHeadlineItems,@orgTodoKeywords nextgroup=orgPlanning,orgPropertyDrawer,orgSection
+"       \ keepend skipnl
+
+" syntax match orgHeadline3 /\(^\*\*\*\)\@=.*/
+"       \ contains=@orgHeadlineItems,@orgTodoKeywords nextgroup=orgPlanning,orgPropertyDrawer,orgSection
+"       \ keepend skipnl
+
+" syntax match orgHeadlineN /\(^\*\)\@=.*/
+"       \ matchgroup=orgHeadlineStars start=/^\*\{4,}/ end=/$/
+"       \ contains=@orgHeadlineItems,@orgTodoKeywords nextgroup=orgPlanning,orgPropertyDrawer,orgSection
+"       \ keepend skipnl
+
+syntax match orgHeadlineConcealedStars contained /^\**\zs\*\ze\*/ conceal cchar= 
+" syntax match orgHeadlineStars    contained /^\*\+/ contains=orgConcealedStars
 " https://stackoverflow.com/questions/49932880/replace-concealed-characters-with-a-space
 " syntax match orgConcealedStars   contained /^\*\+/me=e-1
 syntax match orgHeadlinePriority contained /\(\[#\a\]\)/
@@ -51,6 +91,9 @@ syntax match orgPlanning contained /^\s*SCHEDULED:.*/ contains=orgTimestamp next
 syntax match orgPlanning contained /^\s*CLOSED:.*/    contains=orgTimestamp nextgroup=orgSection,orgPropertyDrawer skipnl
 
 " TODO: all these. Add default
+highlight link orgHeadline1 Statement
+highlight link orgHeadline2 Function
+highlight link orgHeadline3 String
 highlight link orgHeadlineStars Number
 highlight link orgHeadlinePriority Error
 highlight link orgHeadlineTags SpecialComment
@@ -173,7 +216,7 @@ hi link orgDynamicBlockEnd SpecialChar
 syntax match orgFootnoteDef /\[fn:[[:alnum:]-_]\+\]/ contains=orgFootnoteDefLabel
             \ nextgroup=orgFootnoteDefContents skipwhite
 syntax match orgFootnoteDefLabel /:\zs[[:alnum:]-_]\+/ contained
-syntax region orgFootnoteDefContents contained nextgroup=orgFootnoteDef,orgHeadline
+syntax region orgFootnoteDefContents contained nextgroup=orgFootnoteDef,@orgHeadline
             \ start='.' end='\ze\n\%(^\*\|\[fn\|^$\n^$\)' keepend
 " TODO: use multi end characters
 " CONTENTS can contain any element excepted another footnote definition.
