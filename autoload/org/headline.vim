@@ -30,7 +30,7 @@ endfunction
 function! org#headline#level(lnum, ...) abort
   let l:lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
   let l:return_lnum = get(a:, '1', 0)
-  let l:lnum = org#headline#checkline(l:lnum) ? l:lnum : org#headline#find(l:lnum, 0, 'bW')
+  let l:lnum = org#headline#find(l:lnum, 0, 'bW')
   let l:headline_level = max([0, matchend(getline(l:lnum), '^\*\+')])
   return l:return_lnum ? [l:headline_level, l:lnum] : l:headline_level
 endfunction
@@ -60,18 +60,18 @@ function! s:open_headline(direction) abort
   if a:direction > 0
     let [l:headline_level, l:headline_lnum] = org#headline#level('.', 1)
     let l:headline_level = l:headline_level == 0 ? 1 : l:headline_level
-    let l:prev_headline = org#headline#find(l:headline_lnum, 0, 'bW')
     let l:next_headline = max([l:headline_lnum - 1, 0])  " 0 - 1 if headline not found
   else
     let [l:headline_level, l:prev_headline] = org#headline#level('.', 1)
     let l:headline_level = l:headline_level == 0 ? 1 : l:headline_level
-    let l:next_headline = org#headline#find(l:prev_headline, l:headline_level, 'W')
+    let l:next_headline = org#headline#find(l:prev_headline + 1, l:headline_level, 'W')
     " If no match found, we're at end of file. Also subtract 1 so it's above the match.
     let l:next_headline = l:next_headline == 0 ? prevnonblank(line('$')) : l:next_headline - 1
     " If the headlines are neighbors, don't add empty spaces.
   endif
   call append(l:next_headline, repeat('*', l:headline_level) . ' ')
 
+  " TODO call formatting function
   let l:added_lines = 1
   if !org#headline#checktext(getline(l:next_headline)) && l:next_headline > 0
     if !empty(getline(l:next_headline))

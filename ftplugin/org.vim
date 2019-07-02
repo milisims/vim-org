@@ -43,5 +43,10 @@ nmap <buffer> gaS <Plug>(org-headline-schedule-top)
 " Keepers: ?
 nmap <buffer> ]] <Plug>(org-headline-next)
 nmap <buffer> [[ <Plug>(org-headline-prev)
-nmap <buffer> ][ <Plug>(org-headline-samelevel-next)
-nmap <buffer> [] <Plug>(org-headline-samelevel-prev)
+nmap <buffer> ][ <Plug>(org-headline-next-samelevel)
+nmap <buffer> [] <Plug>(org-headline-prev-samelevel)
+
+xmap <buffer> ]] <Plug>(org-headline-next)
+xmap <buffer> [[ <Plug>(org-headline-prev)
+xmap <buffer> ][ <Plug>(org-headline-next-samelevel)
+xmap <buffer> [] <Plug>(org-headline-prev-samelevel)

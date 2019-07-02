@@ -25,7 +25,7 @@ function! org#motion_headline(count1, direction, same_level) abort
   let l:flags = a:direction > 0 ? '' : 'b'
   let l:level = a:same_level ? org#headline#level('.') : 0
   for l:i in range(a:count1)
-      execute org#headline#find('.', l:level, l:flags)
+      execute org#headline#find(line('.') + (a:direction > 0 ? 1 : -1), l:level, l:flags)
   endfor
   normal! 0
 endfunction

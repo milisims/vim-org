@@ -29,10 +29,15 @@ nnoremap <silent> <Plug>(org-todo-cycle-back) :call org#headline#cycle_keyword(-
 " Motions:
 nnoremap <silent> <Plug>(org-headline-next) :<C-u>call org#motion_headline(v:count1, 1, 0)<CR>
 nnoremap <silent> <Plug>(org-headline-prev) :<C-u>call org#motion_headline(v:count1, -1, 0)<CR>
-
-" :h :map-<script> :map-<unique>
 nnoremap <silent> <Plug>(org-headline-next-samelevel) :<C-u>call org#motion_headline(v:count1, 1, 1)<CR>
 nnoremap <silent> <Plug>(org-headline-prev-samelevel) :<C-u>call org#motion_headline(v:count1, -1, 1)<CR>
+
+xnoremap <silent> <Plug>(org-headline-next) :<C-u>call org#motion_headline(v:count1, 1, 0)<CR>
+xnoremap <silent> <Plug>(org-headline-prev) :<C-u>call org#motion_headline(v:count1, -1, 0)<CR>
+xnoremap <silent> <Plug>(org-headline-next-samelevel) :<C-u>call org#motion_headline(v:count1, 1, 1)<CR>
+xnoremap <silent> <Plug>(org-headline-prev-samelevel) :<C-u>call org#motion_headline(v:count1, -1, 1)<CR>
+
+" :h :map-<script> :map-<unique>
 
 vnoremap <silent> <Plug>(org-section-visual-inner)    :<C-u>call org#visual_headline(1)<CR>
 vnoremap <silent> <Plug>(org-section-visual-around)   :<C-u>call org#visual_headline(0)<CR>
