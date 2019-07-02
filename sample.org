@@ -24,7 +24,7 @@
 #+CAPTION[OPTION]: This should work
 #+ATTR_TEST: VALUE
 
-** WAITING What did Mark say?
+** WAITING What did Frank say?
    [[http://example.com/here/is/the/recording][1st recording]]
    [[http://example.com/here/is/the/recording][2nd recording]]
 
