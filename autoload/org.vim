@@ -45,7 +45,7 @@ endfunction
 " inner list: current sub-list with header item
 
 function! org#operator_headline(inner) abort
-  let [l:start, l:end] = org#headline#range('.', a:inner)
+  let [l:start, l:end] = org#section#range('.', a:inner)
   if l:start == 0 || line('.') < l:start || line('.') > l:end
     " Not in a headline, or inner and the headline is empty
     return
@@ -55,7 +55,7 @@ endfunction
 
 " TODO: pre-selected region addition only works backwards
 function! org#visual_headline(inner) abort
-  let [l:start, l:end] = org#headline#range('.', a:inner)
+  let [l:start, l:end] = org#section#range('.', a:inner)
   if l:start == 0 || line('.') < l:start || line('.') > l:end
     " Not in a headline, or inner and the headline is empty
     normal! gv

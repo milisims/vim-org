@@ -12,9 +12,13 @@ function! org#headline#has_keyword(text) abort
   return a:text =~# '^\*\+\s\+\(' . join(org#get_todo_keywords(), '\|') . '\)'
 endfunction
 
-" TODO: this is inconsistent? parse?
 function! org#headline#keyword(text) abort
   return matchstr(a:text, '^\*\+\s\+\zs\(' . join(org#get_todo_keywords(), '\|') . '\)')
+endfunction
+
+function! org#headline#is_scheduled(lnum) abort
+  let l:lnum = org#section#headline(a:lnum) + 1
+  return getline(l:lnum) =~# '^\s*SCHEDULED:\|DEADLINE:'
 endfunction
 
 function! org#headline#find(lnum, ...) abort
@@ -33,27 +37,6 @@ function! org#headline#level(lnum, ...) abort
   let l:lnum = org#headline#find(l:lnum, 0, 'bW')
   let l:headline_level = max([0, matchend(getline(l:lnum), '^\*\+')])
   return l:return_lnum ? [l:headline_level, l:lnum] : l:headline_level
-endfunction
-
-" TODO rename to org#section#range maybe
-function! org#headline#range(lnum, ...) abort
-  " first return value (start) is zero if failed to find headline.
-  " end is undefined in that case.
-  let l:lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
-  let l:inner = get(a:, '1', 0)
-  let l:start = org#headline#find(l:lnum, 0, 'bW')
-  let l:end = org#headline#find(l:lnum + 1, org#headline#level(l:lnum), 'W')
-  let l:end = l:end > 0 ? l:end - 1 : l:start
-  " let l:end = l:end < l:start ? line('$') : l:end
-  if l:inner
-    if l:start == l:end && org#headline#checkline(l:start)
-      " Empty headline section, nothing to select
-      return [0, 0]
-    endif
-    let l:start += 1
-    let l:end = prevnonblank(l:end)
-  endif
-  return [l:start, l:end]
 endfunction
 
 function! s:open_headline(direction) abort
@@ -111,7 +94,6 @@ function! org#headline#cycle_keyword(direction) abort
     let l:next_keyword = org#get_todo_keywords()[l:next]
   endif
 
-  echo l:current_keyword l:next_keyword
   " Substitute, with extra stuff for edge cases
   if empty(l:current_keyword)
     let l:new_line = substitute(l:line, '^\*\+\s\+', '&' . l:next_keyword . ' ', '')
@@ -123,3 +105,9 @@ function! org#headline#cycle_keyword(direction) abort
   call setline('.', l:new_line)
 endfunction
 
+function! org#headline#schedule(lnum) abort
+  if !org#headline#is_scheduled(a:lnum)
+    call append(a:lnum - 1, '')
+  endif
+  let l:date = org#timestamp()
+endfunction

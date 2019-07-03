@@ -7,7 +7,7 @@ function! org#util#search(lnum, pattern, flags, ...) abort
   if a:lnum >= line('$')
     call cursor(line('$'), col([line('$'), '$']))
     let l:flags = a:flags . (a:flags =~# 'b' ? '' : 'c')
-  elseif a:lnum > 0
+  elseif a:lnum >= 0
     call cursor(a:lnum + (a:flags =~# 'b' ? 1 : 0), 1)
     let l:flags = a:flags . (a:flags =~# 'b' ? 'z' : 'c')
   endif
