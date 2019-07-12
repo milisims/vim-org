@@ -4,7 +4,9 @@
 setlocal indentexpr=GetOrgIndent()
 " Default is nolisp nosmartindent autoindent.
 setlocal indentkeys=0#,0*,0-,0+,0.,o,O
-setlocal foldmethod=indent
+setlocal foldmethod=expr
+setlocal foldexpr=org#fold#expr(v:lnum)
+setlocal foldtext=org#fold#text()
 setlocal formatoptions=1tronlj
 setlocal commentstring='#%s'
 setlocal comments=b:+,b:-,fb:*
