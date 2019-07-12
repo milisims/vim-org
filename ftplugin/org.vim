@@ -17,6 +17,7 @@ setlocal softtabstop=0
 setlocal shiftwidth=2
 setlocal expandtab
 
+
 " TODO: counts!
 " Questionable:
 nmap <buffer> cax <Plug>(org-add-or-remove-checkbox)
@@ -26,10 +27,15 @@ nmap <buffer> cd <Plug>(org-todo-cycle)
 nmap <buffer> gO <Plug>(org-headline-open-above)
 nmap <buffer> go <Plug>(org-headline-open-below)
 
-vmap <buffer> ah <Plug>(org-section-visual-around)
-vmap <buffer> ih <Plug>(org-section-visual-inner)
-omap <buffer> ah <Plug>(org-section-operator-around)
-omap <buffer> ih <Plug>(org-section-operator-inner)
+xmap <buffer> ah <Plug>(org-headline-visual-around)
+xmap <buffer> ih <Plug>(org-headline-visual-inner)
+omap <buffer> ah <Plug>(org-headline-operator-around)
+omap <buffer> ih <Plug>(org-headline-operator-inner)
+
+xmap <buffer> ac <Plug>(org-section-visual-around)
+xmap <buffer> ic <Plug>(org-section-visual-inner)
+omap <buffer> ac <Plug>(org-section-operator-around)
+omap <buffer> ic <Plug>(org-section-operator-inner)
 
 nmap <buffer> ]k <Plug>(org-todo-cycle)
 nmap <buffer> [k <Plug>(org-todo-cycle-back)
@@ -52,3 +58,7 @@ xmap <buffer> ]] <Plug>(org-headline-next)
 xmap <buffer> [[ <Plug>(org-headline-prev)
 xmap <buffer> ][ <Plug>(org-headline-next-samelevel)
 xmap <buffer> [] <Plug>(org-headline-prev-samelevel)
+
+" DEV STUFF
+
+nnoremap <buffer> <F6> :echo org#foldexpr('.')<CR>

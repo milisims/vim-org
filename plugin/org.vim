@@ -1,18 +1,5 @@
 " setlocal spell
 
-" inoremap <silent> <Plug>(org-o)   :call org#newline('o')<CR>a
-" inoremap <silent> <Plug>(org-O)   :call org#newline('O')<CR>a
-" inoremap <silent> <Plug>(org-BS)  <C-r>=org#format("\<BS>")<CR>
-" inoremap <silent> <Plug>(org-CR)  <C-r>=org#format("\<CR>")<CR>
-" inoremap <silent> <Plug>(org--)   <C-r>=org#format('-')<CR>
-" inoremap <silent> <Plug>(org-+)   <C-r>=org#format('+')<CR>
-" inoremap <silent> <Plug>(org-*)   <C-r>=org#format('*')<CR>
-" inoremap <silent> <Plug>(org-.)   <C-r>=org#format('.')<CR>
-" inoremap <silent> <Plug>(org-))   <C-r>=org#format(')')<CR>
-" inoremap <silent> <Plug>(org-C-t) <C-r>=org#indent()<CR>
-" inoremap <silent> <Plug>(org-C-d) <C-r>=org#dedent()<CR>
-" nnoremap <silent> <Plug>(org-<)   :<C-u>set opfunc=org#dedent<CR>g@
-" nnoremap <silent> <Plug>(org->)   :<C-u>set opfunc=org#indent<CR>g@
 
 " NAMING: org-ELEMENT[-MODIFIER][-ACTION][-MODIFIER]
 " No action is a selection or motion
