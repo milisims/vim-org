@@ -79,15 +79,15 @@ Execute (org#headline#level(lnum, ...)):
   AssertEqual 2,      org#headline#level(4)
   AssertEqual 1,      org#headline#level(5)
 
-Execute (org#headline#range(lnum, inner)):
-  AssertEqual 0,      org#headline#range(1)[0]
-  AssertEqual [2, 4], org#headline#range(2)
-  AssertEqual [2, 4], org#headline#range(3, 0)
-  AssertEqual [4, 4], org#headline#range(4, 0)
-  AssertEqual [5, 5], org#headline#range(5, 0)
-  AssertEqual [3, 4], org#headline#range(2, 1)
-  AssertEqual [3, 4], org#headline#range(3, 1)
-  AssertEqual 0,      org#headline#range(4, 1)[0]
+Execute (org#section#range(lnum, inner)):
+  AssertEqual 0,      org#section#range(1)[0]
+  AssertEqual [2, 4], org#section#range(2)
+  AssertEqual [2, 4], org#section#range(3, 0)
+  AssertEqual [4, 4], org#section#range(4, 0)
+  AssertEqual [5, 5], org#section#range(5, 0)
+  AssertEqual [3, 4], org#section#range(2, 1)
+  AssertEqual [3, 4], org#section#range(3, 1)
+  AssertEqual 0,      org#section#range(4, 1)[0]
 
 " " " Execute (org#motion_headline(count1, direction, same)):
 
@@ -331,5 +331,3 @@ Execute (org#list#find(lnum, 0)):
 " " Execute (org#parse_todo_keywords(line)):
 
 " " Execute (org#formatexpr()):
-
-" " vim: set fdm=marker
