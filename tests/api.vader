@@ -331,5 +331,3 @@ Execute (org#list#find(lnum, 0)):
 " " Execute (org#parse_todo_keywords(line)):
 
 " " Execute (org#formatexpr()):
-
-" " vim: set fdm=marker
