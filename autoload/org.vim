@@ -1,158 +1,117 @@
 " NOTE: Generally, we follow the pattern:
-" let l:var = check_for_context()
-" if l:var is True, then process. Otherwise return.
+" let var = check_for_context()
+" if var is True, then process. Otherwise return.
 
 " NOTE:
 " get/is/has
 " when a function has 'direction' vs above/below -- shouldn't?
 
-" document structure {{{
-" These functions return simple information about the document or text
-
-" }}}
-
-
 " function! org#add_property() abort
-"   let [l:property_drawer_start, l:property_drawer_end] = org#property_drawer_range('.')
-"   let l:headline = org#headline#find('.', 0, 'bW')
-"   call append(l:headline, [':PROPERTIES:', '', ':END:'])
+"   let [property_drawer_start, property_drawer_end] = org#property_drawer_range('.')
+"   let headline = org#headline#find('.', 0, 'bW')
+"   call append(headline, [':PROPERTIES:', '', ':END:'])
 " endfunction
 
-" Motions and text objects {{{
-
-function! org#motion_headline(count1, direction, same_level) abort
-  normal! m`
-  let l:flags = a:direction > 0 ? '' : 'b'
-  let l:level = a:same_level ? org#headline#level('.') : 0
-  for l:i in range(a:count1)
-      execute org#headline#find(line('.') + (a:direction > 0 ? 1 : -1), l:level, l:flags)
-  endfor
-  normal! 0
-endfunction
-
-function! org#motion_listitem(count1, direction, same_level) abort
-  for l:i in range(a:count1)
-    if a:direction >= 0
-      let l:lnum = org#get_next_listitem('.', a:same_level)
-    else
-      let l:lnum = org#get_prev_listitem('.', a:same_level)
+function! org#shift(direction, mode) range abort " {{{1
+  " Move things around attempting to preserving structure of selected components
+  " FIXME:
+  " dedent and indent:
+  "   - line a
+  "   line b
+  let lnum = a:firstline
+  let cursor = getcurpos()[1:]
+  if org#headline#checkline(a:firstline) " {{{2
+    while lnum >= a:firstline && lnum <= a:lastline
+      call cursor(lnum, 0)
+      if a:direction > 0
+        call org#headline#promote()
+      else
+        call org#headline#demote()
+      endif
+      let lnum = org#headline#find(lnum, 0, 'nxW')
+    endwhile
+    if a:mode == 'i'
+      call feedkeys(a:direction > 0 ? "\<C-g>U\<Right>" : "\<C-g>U\<Left>", 'n')
     endif
-    execute l:lnum
-  endfor
-endfunction
-
-" a list: complete list
-" inner list: current sub-list with header item
-
-function! org#operator_headline(inner) abort
-  let [l:start, l:end] = org#section#range('.', a:inner)
-  if l:start == 0 || line('.') < l:start || line('.') > l:end
-    " Not in a headline, or inner and the headline is empty
     return
+  elseif org#list#checkline(a:firstline) " {{{2
+    " TODO reorder and bullet cycling
+    let lnum = org#list#item_start(a:firstline)
+    let items = []
+    while lnum >= a:firstline && lnum <= a:lastline || empty(items)
+      call add(items, lnum)
+      let lnum = org#list#find(lnum, 2, 'nxW')
+    endwhile
+
+    for lnum in items
+      call cursor(lnum, 1)
+      call org#list#item_indent(a:direction)
+      if org#list#get_bullet(lnum) == org#list#get_bullet(org#list#parent_item_range(lnum)[0])
+        if org#list#item_is_unordered(lnum)
+          call org#list#bullet_cycle(lnum, 1)  " a:direction)
+        endif
+        if org#list#item_is_ordered(lnum)
+          call org#list#reorder()
+        endif
+      endif
+    endfor
+
+  else " plain text for now {{{2
+    " FIXME: fails in insert mode
+    execute a:firstline.','.a:lastline . (a:direction > 0 ? '>' : '<')
+  endif " }}}
+
+  if a:mode == 'i'
+    let cursor[1] += a:direction * &shiftwidth
   endif
-  execute 'normal! ' . l:start .  'ggV' . l:end . 'gg0'
+  call cursor(cursor)
+
 endfunction
 
-" TODO: pre-selected region addition only works backwards
-function! org#visual_headline(inner) abort
-  let [l:start, l:end] = org#section#range('.', a:inner)
-  if l:start == 0 || line('.') < l:start || line('.') > l:end
-    " Not in a headline, or inner and the headline is empty
-    normal! gv
-    return
-  endif
-  let l:start = line("'<") < l:start ? line("'<") : l:start
-  let l:end = line("'>") > l:end ? line("'>") : l:end
-  execute 'normal! ' . l:start .  'ggV' . l:end . 'gg0'
+function! org#dir() abort " {{{1
+  return get(g:, 'org#dir', get(b:, 'org#dir', '~/org'))
 endfunction
 
-function! org#operator_list() abort
-  return
+function! org#refile(item) abort
 endfunction
 
-
-
-
-
-" }}}
-
-" Todo keywords {{{
-
-function! org#get_todo_keywords() abort
-  " TODO multiple types of states, and 'fast access'? completion?
-  return org#build_keyword_cache()
-  " if !exists('b:org_keywords')
-  "   call org#build_keyword_cache()
-  " endif
-  " return b:org_keywords
+function! org#daily() abort
+  let agenda = org#agenda#daily(3)
+  let now = org#timestamp#parse('today')
+  let TimeMod = {hl -> {'module': org#timestamp#ftime2date(org#timestamp#getnearest(now, hl)[1])}}
+  call map(agenda, {ix, hl -> org#agenda#toqf(ix, hl, TimeMod(hl))})
+  call setqflist(agenda)
+  copen
 endfunction
 
-function! org#build_keyword_cache() abort
-  let l:keywords = []
-  let l:cursor = getcurpos()[1:]
-  call cursor(1, 1)
-  while search('^#+TODO:\s*', 'zcWe')
-    normal! $
-    call extend(l:keywords, org#parse_todo_keywords('.'))
+function! org#process_inbox() abort " {{{1
+  let agenda = org#agenda#view()
+  let inbox = resolve(fnamemodify(g:org#inbox, ':p'))
+  call filter(agenda, {_, hl -> hl.FILE == inbox})
+  call filter(agenda, {_, hl -> hl.LEVEL == 1})
+  call sort(agenda, {a, b -> a.LNUM - b.LNUM})
+  " call map(agenda, {ix, hl -> org#agenda#toqf(ix, hl)})
+  " call setqflist(agenda)
+
+  while !empty(agenda)
+    let item = remove(agenda, 0)
+    let process = input(s:getprompt(item), '')  " TODO check out completion
+    " TODO process the items
+    if empty(process)     " if bad input after processing
+      call insert(agenda, item)  " put it back
+    endif
   endwhile
-  call cursor(l:cursor)
-  return empty(l:keywords) ? ['TODO', 'DONE'] : l:keywords
+  " return agenda
 endfunction
 
-" function! org#build_keyword_cache() abort
-"   " Not sure if m` is necessary or if gg sets it always
-"   messages clear
-"   let l:keywords = []
-"   for l:lnum in range(1, line('$'))
-"     " TODO: regex get working
-"     if getline(l:lnum) =~# '^#+TODO:\s*'
-"       echom l:lnum
-"       echom join(org#parse_todo_keywords(l:lnum))
-"       call extend(l:keywords, org#parse_todo_keywords(l:lnum))
-"     endif
-"   endfor
-"   return l:keywords
-" endfunction
-
-function! org#parse_todo_keywords(lnum) abort
-  let l:lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
-  let l:line = matchstr(getline(l:lnum), '^#+TODO:\s*\zs.*')
-  let l:line = substitute(l:line, '[ |\t]\+', ' ', 'g')
-  return split(l:line)
+function! s:getprompt(headline) abort " {{{2
+  let prompt = "Item: "
+  let prompt .= a:headline.TODO . a:headline.ITEM . "\n"
+  let prompt .= "Options:\n"
+  let prompt .= "r: Refile to file [additional args for under subheadings]\n"
+  let prompt .= "t: Refile item then add timestamp\n"
+  let prompt .= "s: Skip item\n"
+  let prompt .= "d: Delete item\n"
+  let prompt .= "> "
+  return prompt
 endfunction
-
-" get(g:, 'org_dir', $HOME . '/org')
-" }}}
-
-" Misc {{{
-
-function! org#formatexpr() abort
-" The |v:lnum|  variable holds the first line to be formatted.
-" The |v:count| variable holds the number of lines to be formatted.
-" The |v:char|  variable holds the character that is going to be
-"       inserted if the expression is being evaluated due to
-"       automatic formatting.  This can be empty.  Don't insert
-"       it yet!
-  " for each header block in region
-  " if empty, behave like:
-  " * h1
-  " ** h2
-  " *** h3
-  " ** h2.2
-  "                                 <-------- this empty line is removed
-  "                                 <-------- this empty line is removed
-  " ** h2.3
-  "
-  " if not:
-  " * h1
-  "                                 <-------- this empty line is removed
-  " ** h2
-  " something
-  "                                 <-------- this empty line is added
-  " ** any other header
-  "
-  " no other formatting
-  return
-endfunction
-
-" }}}

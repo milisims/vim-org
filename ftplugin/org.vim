@@ -1,9 +1,9 @@
 " setlocal spell
 " setlocal foldmethod=syntax
 
-setlocal indentexpr=GetOrgIndent()
+" setlocal indentexpr=GetOrgIndent()
 " Default is nolisp nosmartindent autoindent.
-setlocal indentkeys=0#,0*,0-,0+,0.,o,O
+setlocal indentkeys=0#,0*,0-,0+,0.,o,O,!^F
 setlocal foldmethod=expr
 setlocal foldexpr=org#fold#expr(v:lnum)
 setlocal foldtext=org#fold#text()
@@ -17,25 +17,26 @@ setlocal softtabstop=0
 setlocal shiftwidth=2
 setlocal expandtab
 
+call org#keyword#highlight()
 
 " TODO: counts!
 " Questionable:
-nmap <buffer> cax <Plug>(org-add-or-remove-checkbox)
+nmap <buffer> cax <Plug>(org-checkbox-toggle)
 nmap <buffer> cx <Plug>(org-check-toggle)
 nmap <buffer> cd <Plug>(org-todo-cycle)
 " nmap <buffer> yu <Plug>(org-headline-above)
 nmap <buffer> gO <Plug>(org-headline-open-above)
 nmap <buffer> go <Plug>(org-headline-open-below)
 
-xmap <buffer> ah <Plug>(org-headline-visual-around)
-xmap <buffer> ih <Plug>(org-headline-visual-inner)
-omap <buffer> ah <Plug>(org-headline-operator-around)
-omap <buffer> ih <Plug>(org-headline-operator-inner)
+xmap <buffer> ah <Plug>(org-headline-around)
+xmap <buffer> ih <Plug>(org-headline-inner)
+omap <buffer> ah <Plug>(org-headline-around)
+omap <buffer> ih <Plug>(org-headline-inner)
 
-xmap <buffer> ac <Plug>(org-section-visual-around)
-xmap <buffer> ic <Plug>(org-section-visual-inner)
-omap <buffer> ac <Plug>(org-section-operator-around)
-omap <buffer> ic <Plug>(org-section-operator-inner)
+xmap <buffer> ac <Plug>(org-section-around)
+xmap <buffer> ic <Plug>(org-section-inner)
+omap <buffer> ac <Plug>(org-section-around)
+omap <buffer> ic <Plug>(org-section-inner)
 
 nmap <buffer> ]k <Plug>(org-todo-cycle)
 nmap <buffer> [k <Plug>(org-todo-cycle-back)
@@ -59,6 +60,26 @@ xmap <buffer> [[ <Plug>(org-headline-prev)
 xmap <buffer> ][ <Plug>(org-headline-next-samelevel)
 xmap <buffer> [] <Plug>(org-headline-prev-samelevel)
 
-" DEV STUFF
+omap <buffer> ]] <Plug>(org-headline-next)
+omap <buffer> [[ <Plug>(org-headline-prev)
+omap <buffer> ][ <Plug>(org-headline-next-samelevel)
+omap <buffer> [] <Plug>(org-headline-prev-samelevel)
 
-nnoremap <buffer> <F6> :echo org#foldexpr('.')<CR>
+nmap <buffer> >>    <Plug>(org-shift-right)
+nmap <buffer> <<    <Plug>(org-shift-left)
+xmap <buffer> >     <Plug>(org-shift-right)
+xmap <buffer> <     <Plug>(org-shift-left)
+imap <buffer> <C-t> <Plug>(org-shift-right)
+imap <buffer> <C-d> <Plug>(org-shift-left)
+nnoremap <buffer> >< >>
+nnoremap <buffer> <> <<
+
+nmap <buffer> ]u <Plug>(org-headline-lower-next)
+nmap <buffer> [u <Plug>(org-headline-lower-prev)
+xmap <buffer> ]u <Plug>(org-headline-lower-next)
+xmap <buffer> [u <Plug>(org-headline-lower-prev)
+
+inoremap <buffer> <C-g>t <C-o>diW<C-r>=org#timestamp#ftime2date(org#timestamp#parse(@"))<Cr>
+inoremap <buffer> <C-g><C-t> <C-o>diW<C-r>=org#timestamp#ftime2date(org#timestamp#parse(@"))<Cr>
+
+" DEV STUFF

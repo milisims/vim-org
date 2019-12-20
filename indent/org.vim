@@ -8,7 +8,7 @@
 "   finish
 " endif
 
-function! GetOrgIndent() abort
+function! GetOrgIndent() abort " {{{1
   " TODO check for a language, call the language's indentation
   " TODO remove following line. use v:lnum. debug line
   " let l:lnum = line('.')
@@ -17,10 +17,10 @@ function! GetOrgIndent() abort
   let l:prev_line = getline(l:lnum - 1)
   if l:line =~# '^\*\|^\s*#'  " if headline or #
     return 0
-  elseif org#list#is_item(l:lnum)
+  elseif org#list#checkline(l:lnum)
     let l:indent = max([org#list#level(l:lnum), 1]) * &shiftwidth
     return org#list#has_header(l:line) ? l:indent : l:indent + 2
-  elseif org#list#is_item(l:lnum - 1)
+  elseif org#list#checkline(l:lnum - 1)
     return (org#list#level(l:lnum - 1) + 1) * &shiftwidth
   elseif l:prev_line =~# '^\*\+'
     return 0

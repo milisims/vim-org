@@ -1,18 +1,30 @@
+
+
+* A headline  1
+:PROPERTIES:
+:prop1: ab
+:prop2: c d
+:prop3: efg
+:END:
+
+some other text
+
 * list test
-  - item
-    - item also
-    item
-  - item
-   item
+  - item          2
+  - item also     3
+    item           4
+  - item          5
+    item          6
   not item
   not item
 
+#+TODO: TODO NEXT | DONE
 
 * TODO [#a] My Life in plain text :thisistag:
   - [X] birth
   - [-] life [50%]
-        - [X] use vim
-        - [ ] get everything else done
+  - [X] use vim
+  - [ ] get everything else done
 * Write minutes of last meeting <2014-08-08 Fri>        :work:
 ** DONE John said
    this
@@ -42,17 +54,29 @@ CONTENTS
 
 [fn:LABEL] CONTENTS
 
+* this is a thing
+<2019-09-30 Mon 1:00 > DEADLINE: <2019-10-03 Tue 12:00-13:00> <2019-09-30 Mon>--<2019-10-01 Tue>
 
 * this is a thing
-- list item 1
-- list item 2
+SCHEDULED: <2019-09-30 Mon 1:00 > DEADLINE: <2019-10-03 Tue 12:00-13:00> <2019-09-30 Mon>--<2019-10-01 Tue>
 
-1. item 1
-2. [X] item 2
-   - [ ] some tag :: item 2.1
-   - some tag :: item 2.1
-     hello
+  - list item 1
+    - a
+    - b
+    - c
+    c1
+  - d
+  - e
+  - list item 2
+  some more text
 
+  1. item 1
+  2. [X] item 2
+    - [ ] some tag :: item 2.1
+    - some tag :: item 2.1
+    hello
+
+  - test
 
 { start
 line 1
@@ -61,7 +85,15 @@ end }
 
 
 * DONE Some folding headline 1        :one:
-SCHEDULED: <2019-04-12 Fri 07:15 .+1d>
+* TODO Some folding headline 1        :one:
+DEADLINE: <2019-04-12 Fri 07:15 .+1d>
+:PROPERTIES:
+:aaa+: abcd
+:aaa: abcd
+:bbb: bcde
+:ccc: cdef
+:END:
+
 ** Folded
 *** Even more folded
 * Some folding headline 2
@@ -74,14 +106,3 @@ SCHEDULED: <2019-04-12 Fri 07:15 .+1d>
 ** Folded
 *** Even more folded
     completely unfolded
-
-
-Uses:
-notes
-todo list
-day planner
-GTD
-Time planning and accounting.
-
-Would-be-nice
-- clocking system

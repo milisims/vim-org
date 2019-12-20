@@ -1,6 +1,13 @@
-" setlocal spell
+" {{{ Variables
 
+let org#timestamp#scheduled#time = get(g:, 'org#timestamp#scheduled#time', 3)
+let org#timestamp#deadline#time = get(g:, 'org#timestamp#deadline#time', 3)
+let org#dir = '~/org'
+let org#inbox = org#dir . '/inbox.org'
 
+" }}}
+
+" {{{ Mappings
 " NAMING: org-ELEMENT[-MODIFIER][-ACTION][-MODIFIER]
 " No action is a selection or motion
 " Action can also describe a motion.
@@ -10,66 +17,74 @@ nnoremap <silent> <Plug>(org-checkbox-add)           :call org#list#checkbox_add
 nnoremap <silent> <Plug>(org-checkbox-remove)        :call org#list#checkbox_remove()<CR>
 nnoremap <silent> <Plug>(org-checkbox-toggle)        :call org#list#checkbox_toggle()<CR>
 
-nnoremap <silent> <Plug>(org-todo-cycle)      :call org#headline#cycle_keyword(1)<CR>
-nnoremap <silent> <Plug>(org-todo-cycle-back) :call org#headline#cycle_keyword(-1)<CR>
+nnoremap <silent> <Plug>(org-todo-cycle)      :call org#keyword#cycle(1)<CR>
+nnoremap <silent> <Plug>(org-todo-cycle-back) :call org#keyword#cycle(-1)<CR>
+
+" Editing:
+nnoremap <silent> <Plug>(org-shift-right)      :call org#shift(1, 'n')<CR>
+nnoremap <silent> <Plug>(org-shift-left)       :call org#shift(-1, 'n')<CR>
+xnoremap <silent> <Plug>(org-shift-right)      :call org#shift(1, 'v')<CR>gv
+xnoremap <silent> <Plug>(org-shift-left)       :call org#shift(-1, 'v')<CR>gv
+inoremap <silent> <Plug>(org-shift-right) <C-o>:call org#shift(1, 'i')<CR>
+inoremap <silent> <Plug>(org-shift-left)  <C-o>:call org#shift(-1, 'i')<CR>
 
 " Motions:
-nnoremap <silent> <Plug>(org-headline-next) :<C-u>call org#motion_headline(v:count1, 1, 0)<CR>
-nnoremap <silent> <Plug>(org-headline-prev) :<C-u>call org#motion_headline(v:count1, -1, 0)<CR>
-nnoremap <silent> <Plug>(org-headline-next-samelevel) :<C-u>call org#motion_headline(v:count1, 1, 1)<CR>
-nnoremap <silent> <Plug>(org-headline-prev-samelevel) :<C-u>call org#motion_headline(v:count1, -1, 1)<CR>
+nnoremap <silent> <Plug>(org-headline-lower-prev) :<C-u>call org#headline#lower(v:count1, -1, 'n')<CR>
+nnoremap <silent> <Plug>(org-headline-lower-next) :<C-u>call org#headline#lower(v:count1,  1, 'n')<CR>
+xnoremap <silent> <Plug>(org-headline-lower-prev) :<C-u>call org#headline#lower(v:count1, -1, 'v')<CR>
+xnoremap <silent> <Plug>(org-headline-lower-next) :<C-u>call org#headline#lower(v:count1,  1, 'v')<CR>
 
-xnoremap <silent> <Plug>(org-headline-next) :<C-u>call org#motion_headline(v:count1, 1, 0)<CR>
-xnoremap <silent> <Plug>(org-headline-prev) :<C-u>call org#motion_headline(v:count1, -1, 0)<CR>
-xnoremap <silent> <Plug>(org-headline-next-samelevel) :<C-u>call org#motion_headline(v:count1, 1, 1)<CR>
-xnoremap <silent> <Plug>(org-headline-prev-samelevel) :<C-u>call org#motion_headline(v:count1, -1, 1)<CR>
+nnoremap <silent> <Plug>(org-headline-next) :<C-u>call org#headline#jump(v:count1, 1, 0, 'n')<CR>
+nnoremap <silent> <Plug>(org-headline-prev) :<C-u>call org#headline#jump(v:count1, -1, 0, 'n')<CR>
+nnoremap <silent> <Plug>(org-headline-next-samelevel) :<C-u>call org#headline#jump(v:count1, 1, 1, 'n')<CR>
+nnoremap <silent> <Plug>(org-headline-prev-samelevel) :<C-u>call org#headline#jump(v:count1, -1, 1, 'n')<CR>
+
+xnoremap <silent> <Plug>(org-headline-next) :<C-u>call org#headline#jump(v:count1, 1, 0, 'v')<CR>
+xnoremap <silent> <Plug>(org-headline-prev) :<C-u>call org#headline#jump(v:count1, -1, 0, 'v')<CR>
+xnoremap <silent> <Plug>(org-headline-next-samelevel) :<C-u>call org#headline#jump(v:count1, 1, 1, 'v')<CR>
+xnoremap <silent> <Plug>(org-headline-prev-samelevel) :<C-u>call org#headline#jump(v:count1, -1, 1, 'v')<CR>
+
+onoremap <silent> <Plug>(org-headline-next) :<C-u>call org#headline#jump(v:count1, 1, 0, 'o')<CR>
+onoremap <silent> <Plug>(org-headline-prev) :<C-u>call org#headline#jump(v:count1, -1, 0, 'o')<CR>
+onoremap <silent> <Plug>(org-headline-next-samelevel) :<C-u>call org#headline#jump(v:count1, 1, 1, 'o')<CR>
+onoremap <silent> <Plug>(org-headline-prev-samelevel) :<C-u>call org#headline#jump(v:count1, -1, 1, 'o')<CR>
 
 " :h :map-<script> :map-<unique>
 
-vnoremap <silent> <Plug>(org-section-visual-inner)    :<C-u>call org#visual_headline(1)<CR>
-vnoremap <silent> <Plug>(org-section-visual-around)   :<C-u>call org#visual_headline(0)<CR>
-onoremap <silent> <Plug>(org-section-operator-inner)  :<C-u>call org#operator_headline(1)<CR>
-onoremap <silent> <Plug>(org-section-operator-around) :<C-u>call org#operator_headline(0)<CR>
+vnoremap <silent> <Plug>(org-section-inner)  :<C-u>call org#section#textobject(v:count1, 1, 'v')<CR>
+vnoremap <silent> <Plug>(org-section-around) :<C-u>call org#section#textobject(v:count1, 0, 'v')<CR>
+onoremap <silent> <Plug>(org-section-inner)  :<C-u>call org#section#textobject(v:count1, 1, 'o')<CR>
+onoremap <silent> <Plug>(org-section-around) :<C-u>call org#section#textobject(v:count1, 0, 'o')<CR>
 
-nnoremap <silent> <Plug>(org-headline-open-above) :call org#headline#open_above()<CR>
-nnoremap <silent> <Plug>(org-headline-open-below) :call org#headline#open_below()<CR>
+nnoremap <silent> <Plug>(org-headline-open-above) :call org#headline#open(-1)<CR>
+nnoremap <silent> <Plug>(org-headline-open-below) :call org#headline#open(1)<CR>
+
+" }}}
 
 " org-goto is like searching in vim.
 
 " Structure editing
 " g[h and g]h are free
-" nnoremap <silent> <Plug>(org-insert-heading-above)
-" nnoremap <silent> <Plug>(org-insert-heading-below)
 " nnoremap <silent> <Plug>(org-insert-heading-at-cursor)(splits-line)
 " insert new heading at the end of the subtree
 " insert headings with TODO, all drop into insert mode.
 " insert item with checkbox in list
 " C-t and C-d, operators
 
-" XXX: Operators act on text objects!!!
-
-" nnoremap <silent> <Plug>(org-toggle-heading) turn list or normal line into heading
-
 " <Up><Left><Down><Right> for promotions, S<Right><Left> for whole subtree
 
-" Subtree operators
 
-onoremap <silent> <Plug>(org-a-subtree)     <Nop>
-onoremap <silent> <Plug>(org-inner-subtree)         <Nop>
-" onoremap <silent> <Plug>(org-a-checkbox)     <Nop>
-" onoremap <silent> <Plug>(org-a-checkbox)     <Nop>
+augroup org_keywords
+  autocmd!
+  autocmd BufReadPost,BufWritePost *.org call org#keyword#get()
+  autocmd BufEnter,BufWritePost *.org call org#keyword#highlight()
+augroup END
 
-" augroup org
-"   autocmd!
-"   " TODO: just check for cache in function, rather than forcing the autoload to laod
-"   autocmd BufRead *.org call org#build_keyword_cache()
-" augroup END
+command! OrgCapture edit ~/org/inbox.org
+command! OrgSchedule call org#timestamp#prompt('.')
 
 "TODO:
 " Commands:
-" Sort subtree - prompt for alpha/numeric, later other things (see emacs)
-" create sparse tree: regexp, todo, todo-kwd (folds/unfolds automatically -- fold expr? manual?)
-                " jump to matches for the tree
 " Agenda
 " Capture
 

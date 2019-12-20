@@ -1,24 +1,36 @@
-function! org#section#headline(lnum) abort
-  return org#headline#find(a:lnum, 0, 'bW')
+function! org#section#headline(lnum) abort " {{{1
+  return org#headline#find(a:lnum, 0, 'nbW')
 endfunction
 
-function! org#section#range(lnum, ...) abort
+function! org#section#range(lnum, ...) abort " {{{1
   " first return value (start) is zero if failed to find headline.
   " end is undefined in that case.
-  let l:lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
-  let l:headline_included = get(a:, '1', 0)
-  let l:start = org#headline#find(l:lnum, 0, 'bW')
-  let l:end = org#headline#find(l:lnum + 1, org#headline#level(l:lnum), 'W')
-  let l:end = l:end > 0 ? l:end - 1 : l:start
-  " let l:end = l:end < l:start ? line('$') : l:end
-  if ! l:headline_included
-    if l:start == l:end && org#headline#checkline(l:start)
-      " Empty headline section, nothing to select
-      return [0, 0]
+  let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
+  let inner = get(a:, 1, 0)
+  let start = org#headline#at(lnum)
+  let end = org#headline#find(lnum, org#headline#level(start), 'nxW')
+  let end = end > 0 ? end - 1 : line('$')
+  if inner
+    if start == end && org#headline#checkline(start)
+      return [0, 0]  " Empty headline section, nothing to select
     endif
-    let l:start += 1
-    let l:end = prevnonblank(l:end)
+    return [start + 1, prevnonblank(end)]
   endif
-  return [l:start, l:end]
+  return [start == 0 ? 1 : start, end]
 endfunction
 
+function! org#section#textobject(count, inner, mode) abort " {{{1
+  let [start, end] = org#section#range('.', a:inner)
+  if start == 0 || line('.') < start || line('.') > end
+    if a:mode == 'v'
+      normal! gv
+    endif
+    return
+  endif
+  echo line("'>") end
+  if a:mode == 'v'
+    let start = line("'<") < start ? line("'<") : start
+    let end = line("'>") > end ? line("'>") : end
+  endif
+  execute 'normal! ' . start . 'GV' . end . 'G0'
+endfunction
