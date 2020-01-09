@@ -1,7 +1,7 @@
 function! org#headline#parse(text, ...) abort " {{{1
   " returns a dict:
   " {level: n, keyword: text, priority: char, title: text, tags: []}
-  " a1 can be a list: ['TODO', 'DONE'] or a dict: {'todo': ['TODO'], 'done': ['DONE']}
+  " a1 must be a dict: {'todo': ['TODO'], 'done': ['DONE']}
   let keywords = get(a:, 1, org#keyword#all())
   let todo = keywords['todo']
   let done = keywords['done']
@@ -13,6 +13,21 @@ function! org#headline#parse(text, ...) abort " {{{1
   let d = index(done, k) >= 0 ? k : ''
   let k = index(done, k) >= 0 ? '' : k
   return {'LEVEL': len(n), 'TODO': k, 'DONE': d, 'PRIORITY': p, 'ITEM': t, 'TAGS': split(g, ':')}
+endfunction
+
+function! org#headline#get(lnum, ...) abort " {{{1
+  " returns a dict: a headline object
+  " {level: n, keyword: text, priority: char, title: text, tags: []}
+  " a1 can be a list: ['TODO', 'DONE'] or a dict: {'todo': ['TODO'], 'done': ['DONE']}
+  let keywords = get(a:, 1, org#keyword#all())
+  let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
+  let info = org#headline#parse(getline(lnum), keywords)
+  let info.FILE = bufname()
+  let info.BUFNR = bufnr()
+  let info.LNUM = lnum
+  call extend(info, org#timestamp#get(info.LNUM))
+  call extend(info, org#property#all(info.LNUM), 'keep')
+  return info
 endfunction
 
 function! org#headline#checkline(lnum) abort " {{{1
@@ -66,7 +81,9 @@ function! org#headline#add(lnum, level, text, ...) abort " {{{1
   if level == 0
     let level = 1
   endif
-  call append(lnum - 1, repeat('*', level) . (empty(a:text) ? '' : ' ' . a:text))
+  " If whitespace, just the whitespace. if text, space + text. If empty, no space.
+  let text = empty(a:text) ? '' : (a:text =~? '\S' ? ' ' . a:text : a:text)
+  call append(lnum - 1, repeat('*', level) . text)
 endfunction
 
 function! org#headline#open(direction) abort " {{{1
@@ -82,22 +99,20 @@ function! org#headline#open(direction) abort " {{{1
     let next = next == 0 ? prevnonblank(line('$')) : next - 1
     " If the headlines are neighbors, don't add empty spaces.
   endif
-  call org#headline#add(next, level, ' ')  " Necessary?
-  " call append(next, repeat('*', level) . ' ')
+  call org#headline#add(next + 1, level, ' ')
+  call cursor(next + 1, level + 2)
+  startinsert!
 
   " TODO call formatting function
-  let added_lines = 1
-  if !org#headline#checktext(getline(next)) && next > 0
-    if !empty(getline(next))
-      let added_lines += 1
-      call append(next, '')
-    endif
-    if !empty(getline(next + added_lines + 1))
-      call append(next + added_lines, '')
-    endif
-  endif
-  call cursor(next + added_lines, level + 1)
-  startinsert!
+  " if !org#headline#checktext(getline(next)) && next > 0
+  "   if !empty(getline(next))
+  "     let added_lines += 1
+  "     call append(next, '')
+  "   endif
+  "   if !empty(getline(next + added_lines + 1))
+  "     call append(next + added_lines, '')
+  "   endif
+  " endif
 endfunction
 
 function! org#headline#jump(count1, direction, same_level, mode) abort " {{{1

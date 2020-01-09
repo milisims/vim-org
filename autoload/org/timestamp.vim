@@ -30,6 +30,7 @@ function! org#timestamp#parse(text, ...) abort " {{{1
   let today = now - strftime('%H') * s:p.h - strftime('%M') * 60 - strftime('%S')
   " let year = float2nr(strftime('%Y') * 365.25) * 86400
   " let month = strftime('%m')
+  " TODO checkout :h /\&
   if a:text =~? 'now'
     return localtime()
   elseif 'today' =~? a:text
@@ -52,7 +53,7 @@ function! org#timestamp#parse(text, ...) abort " {{{1
       return today + ((day - strftime('%w')) % 7 + 1) * s:p.d + nn * s:p.w
     endif
   else
-    return org#timestamp#parse_date(a:text)
+    return org#timestamp#date2ftime(a:text)
   endif
   return 0
 endfunction
@@ -76,55 +77,71 @@ function! org#timestamp#ftime2date(time, ...) abort " {{{1
   return strftime(timefmt, a:time)
 endfunction
 
-function! org#timestamp#parse_date(text) abort " {{{1
-    let [y, m, d, H, M] = matchlist(a:text, g:org#regex#timestamp#parse_date)[1:5]
-    let y = empty(y) ? strftime('%Y') : (len(y) == 2 ? 20 . y : y)
-    " let y = float2nr((empty(y) ? strftime('%Y') : y) * 365.25) * 86400
-    let m = empty(m) ? strftime('%m') : match(org#timestamp#month_names, m) + 1
-    let m = m > 0 ? m : strftime('%m')
-    let d = empty(d) ? strftime('%d') : match(org#timestamp#day_names, d)
-    " dayn
-    " monthn
-    " yearn
-    " time
-endfunction
 
 function! org#timestamp#date2ftime(date) abort " {{{1
-  " Return ftime OR [start, end] if date is a range.
-  if a:date =~# g:org#regex#timestamp#daterange0
-    let [start, end] = matchlist(a:date, g:org#regex#timestamp#daterange2)[1:2]
-    let ftime = [org#timestamp#date2ftime(start), org#timestamp#date2ftime(end)]
-  elseif a:date =~# g:org#regex#timestamp#datetimerange0
-    let [y, m, d, dow, H1, M1, H2, M2] = matchlist(a:date, g:org#regex#timestamp#datetimerange8)[1:8]
-    let ftime = s:to_ftime(y, m, d, H1, M1, H2, M2)
-  else
-    let [y, m, d, dow, H, M] = matchlist(a:date, g:org#regex#timestamp#datetime)[1:6]
-    let ftime = s:to_ftime(y, m, d, H, M)
+  " Return ftime as [start, end]. start == end if not a range.
+  let res = matchlist(a:date, g:org#regex#timestamp#daterange2)
+  if !empty(res)
+    let [start, end] = [s:parsedate(res[1]), s:parsedate(res[2])]
+    return [start[0], end[1]]
   endif
-  return ftime + s:timezone
+  return s:parsedate(a:date)
 endfunction
 
-
-function! s:to_ftime(y, m, d, ...) abort " {{{2
-  let [H1, M1] = [get(a:, 1, 0), get(a:, 2, 0)]
-  let [H2, M2] = [get(a:, 3, -1), get(a:, 4, -1)]
-  messages clear
-  " let time = - s:timezone
-  " let time = 0
-  " echom 1 time org#timestamp#ftime2date(time)
-  " let time = (a:y - 1970) * s:p.y
-  let time = float2nr((a:y - 1970) * 365.25 + 0.25) * s:p.d
-  " echom 2 time org#timestamp#ftime2date(time)
-  let time += s:is_leapyear(a:y) ? s:months_ly[a:m - 1] : s:months[a:m - 1]
-  " echom 3 time org#timestamp#ftime2date(time)
-  let time += (a:d - 1) * s:p.d
-  " echom 4 time org#timestamp#ftime2date(time)
-  let start = time + H1 * s:p.h + M1 * 60
-  if H2 > 0
-    let end = time + H2 * s:p.h + M2 * 60
-    return [start, end]
+function! org#timestamp#date2timestamp(date) abort " {{{1
+  " timestamp: { text: ..., active: bool,
+  "              tstart: float, tend: float,
+  "              repeater: {type: +/++/.+, val: float},
+  "              delay: {type: -/--, val: float} }
+  let res = matchlist(a:date, g:org#regex#timestamp#daterange2)
+  if !empty(res)
+    let [start, end] = [s:parsedate(res[1], 1), s:parsedate(res[2], 1)]
+    return {'text': a:date,
+          \ 'active': a:date =~? '<.*>',
+          \ 'start': start[0],
+          \ 'end': end[1],
+          \ 'repeater': empty(start[2]) ? end[2] : start[2],
+          \ 'delay': empty(start[3]) ? end[3] : start[3],
+          \}
   endif
-  return start
+  let [start, end, repeater, delay] = s:parsedate(a:date, 1)
+  return {'text': a:date,
+        \ 'active': a:date =~? '<.*>',
+        \ 'start': start,
+        \ 'end': end,
+        \ 'repeater': repeater,
+        \ 'delay': delay,
+        \}
+endfunction
+
+function! s:parsedate(date, ...) abort " {{{2
+  let return_repdel = get(a:, 1, 0)
+  let [date, time, repeat, delay] = matchlist(a:date, g:org#regex#timestamp#full4)[1:4]
+  let [y, m, d, dow] = matchlist(date, g:org#regex#timestamp#date)[1:4]
+  let [H1, M1, H2, M2] = [0, 0, '', '']
+  if !empty(time)
+    let [H1, M1, H2, M2] = matchlist(time, g:org#regex#timestamp#timerange4)[1:4]
+  endif
+
+  let [repeat, delay] = [{}, {}]
+  if return_repdel && !empty(repeat)
+    let [type, val, unit] = matchlist(repeat, g:org#regex#timestamp#repeater)[1:3]
+    let repeat = {'type': type, 'val': val * s:p[unit]}
+  endif
+  if return_repdel && !empty(delay)
+    let [type, val, unit] = matchlist(delay, g:org#regex#timestamp#delay)[1:3]
+    let delay = {'type': type, 'val': val * s:p[unit]}
+  endif
+
+  let time = float2nr((y - 1970) * 365.25 + 0.25) * s:p.d
+  let time += s:is_leapyear(y) ? s:months_ly[m - 1] : s:months[m - 1]
+  let time += (d - 1) * s:p.d
+  let start = time + H1 * s:p.h + M1 * 60 + s:timezone
+  let end = start
+  if !empty(H2) > 0
+    let end = time + H2 * s:p.h + M2 * 60 + s:timezone
+  endif
+  return return_repdel ? [start, end, repeat, delay] : [start, end]
 endfunction
 
 function! s:is_leapyear(year) abort " {{{2
@@ -158,7 +175,7 @@ function! org#timestamp#get(lnum, ...) abort " {{{1
     else
       let plan[type] = {}
       let plan[type].active = (type =~# 'CLOSED') ? 0 : org#timestamp#active(item)
-      let plan[type] = org#timestamp#date2ftime(item)
+      let plan[type] = org#timestamp#date2timestamp(item)
       let type = 'TIMESTAMP'
     endif
   endfor
@@ -218,26 +235,31 @@ function! org#timestamp#prompt(lnum) abort " {{{1
   endif
 endfunction
 
-function! org#timestamp#getnearest(tcmp, ts) abort " {{{1
-  " Allows to compute which happened first and by how far.
-  " t1 should be a float, t2 should be a timestamp dict
-  " Assumes one of the three exists
-  if !empty(a:ts.TIMESTAMP) && abs(a:ts.TIMESTAMP - a:tcmp) > s:p.d / 2
-    return ['TIMESTAMP', a:ts.TIMESTAMP]
-  elseif !empty(a:ts.SCHEDULED) && a:ts.SCHEDULED - a:tcmp > -s:p.d / 2 && a:ts.SCHEDULED - a:tcmp < s:p.d * g:org#timestamp#scheduled#time
-    return ['SCHEDULED', a:ts.SCHEDULED]
-  elseif !empty(a:ts.DEADLINE) && a:tcmp - a:ts.DEADLINE > - s:p.d / 2 && a:tcmp - a:ts.DEADLINE < s:p.d * g:org#timestamp#deadline#time
-    return ['DEADLINE', a:ts.DEADLINE]
-  endif
-  return []
-endfunction
-
 function! org#timestamp#tdiff(t1, t2) abort " {{{1
-  " Not sure if the default value makes sense but we're keeping it for now
-  let near = org#timestamp#getnearest(a:t1, a:t2)
-  return empty(near) ? a:t1 : a:t1 - near[1]
+  " Difference of two timestamps or floats
+  " 0 if times overlap, difference in closest start/end otherwise
+  if type(a:t1) == 4 && type(a:t2) == 4 " check for dict
+    if a:t1.end < a:t2.start
+      return a:t1.end - a:t2.start
+    elseif a:t1.start > a:t2.end
+      return a:t1.start - a:t2.end
+    endif
+    return 0
+  elseif type(a:t1) == 4
+    if a:t1.end < a:t2
+      return a:t1.end - a:t2
+    elseif a:t1.start > a:t2
+      return a:t1.start - a:t2
+    endif
+    return 0
+  elseif type(a:t2) == 4
+    if a:t1 < a:t2.start
+      return a:t1 - a:t2.start
+    elseif a:t1 > a:t2.end
+      return a:t1 - a:t2.end
+    endif
+    return 0 " times overlap
+  endif
+  return a:t1 - a:t2  " both numbers
 endfunction
 
-function! org#timestamp#isplanned(tcmp, ts) abort " {{{1
-  return !empty(org#timestamp#getnearest(a:tcmp, a:ts))
-endfunction
