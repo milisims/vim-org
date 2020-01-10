@@ -1,23 +1,23 @@
-let org#agenda#cache = {}
-
 " OLD
 " {absolute filepath:
 "  {'mtime': time, keywords: {'todo': [todo], 'done': [done], headlines: {lnum: ...}}}}
 
 " NEW
 " {absolute filepath:
-"  {'mtime': time, keywords: {'todo': [todo], 'done': [done], subtrees: [ ... ]}}}
+"  {'mtime': time, keywords: {'todo': [todo], 'done': [done]}, SUBTREES: [ ... ],
+"    lnums: {lnum: headline, ...}}}
 "  each headline is a dictionary containing keys below. One key is SUBTREES, which is a list
 "  of dictionaries of headlines.
 
 " 'headline' key contains:
-" ITEM TODO LEVEL PRIORITY TAGS LNUM PARENTLNUM FILE BUFNR HEADLINES(reference to full headlines list)
-" TIMESTAMP DEADLINE CLOSED SCHEDULED
+"  LEVEL TODO DONE PRIORITY ITEM TAGS FILE BUFNR LNUM PARENTLNUM CLOSED
+"  TIMESTAMP SCHEDULED DEADLINE [properties]
 " Future:
 " CATEGORY BLOCKED CLOCKSUM CLOCKSUM_T TIMESTAMP_IA ALLTAGS
 
-
 function! org#agenda#build(...) abort " {{{1
+  " TODO: do we want a 'deepcopy' for the agenda cache? Want the subtrees etc to point at
+  " the right places?
   let force = get(a:, 1, 0)
   let qf = getqflist()  " to restore
   let startbufnr = bufnr()
@@ -27,27 +27,27 @@ function! org#agenda#build(...) abort " {{{1
   for fname in org#agenda#files()
     let fname = resolve(fnamemodify(fname, ':p'))
     let mtime = getftime(fname)
-    if force || !has_key(g:org#agenda#cache, fname) || g:org#agenda#cache[fname].mtime < mtime
+    if force || !has_key(s:agendaCache, fname) || s:agendaCache[fname].mtime < mtime
       let updates[fname] = {
             \ 'mtime': mtime,
             \ 'keywords': {'todo': [], 'done': []},
-            \ 'subtrees': [],
+            \ 'SUBTREES': [],
             \ 'lnums': {}
             \ }
     endif
   endfor
 
   if empty(updates)
-    return g:org#agenda#cache
+    return deepcopy(s:agendaCache)
   endif
 
   " {{{2 get keywords per file
   try  " just ensure we eventually switch back to the starting buffer
     for fname in keys(updates)
       if bufnr(fname) >= 0
-        execute 'keepjumps buffer ' . bufnr(fname)
+        execute 'keepjumps buffer' bufnr(fname)
       else
-        execute 'keepjumps edit ' . fname
+        execute 'keepjumps edit' fname
       endif
       let [todo, done] = org#keyword#get()
       let updates[fname].keywords.todo = todo
@@ -55,11 +55,10 @@ function! org#agenda#build(...) abort " {{{1
     endfor
 
   " {{{2 get headlines per file
-    execute 'vimgrep /^\*/j' . join(keys(updates))
-    " let prevLevels = [{'lvl': 0, 'lnum': 0}]  " to keep track of basic structure for PARENTLNUM
+    execute 'vimgrep /^\*/j' join(keys(updates))
     for [fname, metadata] in items(updates)
       if resolve(fnamemodify(bufname(), ':p')) != fname
-        execute 'keepjumps buffer ' . fname
+        execute 'keepjumps buffer' fname
       endif
       let tree = [metadata]
       let lnum = org#headline#find(1, 0, 'W')
@@ -68,48 +67,24 @@ function! org#agenda#build(...) abort " {{{1
         let headline.SUBTREES = []
         let metadata.lnums[lnum] = headline
         call filter(tree, {_, st -> st is metadata || st.LEVEL < headline.LEVEL})
-        call add(tree[-1][tree[-1] is metadata ? 'subtrees' : 'SUBTREES'], headline)
+        " call add(tree[-1][tree[-1] is metadata ? 'subtrees' : 'SUBTREES'], headline)
+        call add(tree[-1].SUBTREES, headline)
         call add(tree, headline)
         let lnum = org#headline#find(lnum, 0, 'Wx')
       endwhile
     endfor
 
-    " let prevLevels = {}
-    " for entry in getqflist()
-    "   let fname = fnamemodify(bufname(entry.bufnr), ':p')
-    "   " Provides: LEVEL TODO PRIORITY ITEM TAGS
-    "   let headline = org#headline#parse(entry.text, updates[fname].keywords)
-    "   let headline.FILE = resolve(fnamemodify(bufname(entry.bufnr), ':p'))
-    "   let headline.BUFNR = entry.bufnr
-    "   let headline.LNUM = entry.lnum
-    "   call filter(prevLevels, 'v:key < ' . headline.LEVEL)
-
-    "   " Parents and children
-    "   let headline.PARENTS = values(prevLevels)  " [lnum, ... ]
-    "   for [lvl, lnum] in items(prevLevels)
-    "     let parent = updates[fname].headlines[prevLevels[lvl]]
-    "     call add(parent.CHILDREN, headline.LNUM)
-    "   endfor
-    "   let headline.CHILDREN = []  " [lnum, lnum ...]
-    "   let prevLevels[headline.LEVEL] = headline.LNUM
-
-    "   if bufnr() != entry.bufnr
-    "     execute 'keepjumps buffer ' . entry.bufnr
-    "   endif
-    "   call extend(headline, org#timestamp#get(entry.lnum))
-    "   call extend(headline, org#property#all(entry.lnum), 'keep')
-    "   let updates[fname].headlines[entry.lnum] = headline
-    " endfor
   finally
-    execute 'keepjumps buffer ' startbufnr
+    execute 'keepjumps buffer' startbufnr
   endtry
 
   " }}}
 
   call setqflist(qf)
-  call extend(g:org#agenda#cache, updates, 'force')
-  return g:org#agenda#cache
+  call extend(s:agendaCache, updates, 'force')
+  return deepcopy(s:agendaCache)
 endfunction
+let s:agendaCache = {}
 
 function! org#agenda#files() abort " {{{1
   return sort(glob(org#dir() . '/**/*.org', 0, 1))
@@ -119,11 +94,11 @@ endfunction
 function! org#agenda#list(...) abort " {{{1
   " a:1 regex of matching filenames
   let regex = get(a:, 1, '')
-  let fullAgenda = filter(copy(org#agenda#build()), {k, v -> k =~ regex})
+  let fullAgenda = filter(org#agenda#build(), {k, v -> k =~ regex})
 
   let agendaList = []
   for agenda in values(fullAgenda)
-    let headlines = sort(values(agenda.lnums), {_, hl -> hl.LNUM})
+    let headlines = sort(values(agenda.lnums), {a, b -> a.LNUM - b.LNUM})
     call extend(agendaList, headlines)
   endfor
   return len(agendaList) == 1 ? values(agendaList)[0] : agendaList
@@ -133,8 +108,7 @@ function! org#agenda#tree(...) abort " {{{1
   " a:1 regex of matching filenames
   " returns {filename: {level: {lnum: headline, ...}, ...}, ...}
   let regex = get(a:, 1, '')
-  let agenda = filter(copy(org#agenda#build()), {k, v -> k =~ regex})
-  return agenda
+  return filter(org#agenda#build(), {k, v -> k =~ regex})
 endfunction
 
 function! org#agenda#inherit(headline, property, ...) abort " {{{1
@@ -145,7 +119,7 @@ function! org#agenda#inherit(headline, property, ...) abort " {{{1
     if headline.PARENTLNUM <= 0
       break
     endif
-    let headline = g:org#agenda#cache[headline.FILE].headlines[headline.PARENTLNUM]
+    let headline = org#agenda#build()[headline.FILE].headlines[headline.PARENTLNUM]
   endwhile
   let headline = a:headline
   let headline['INHERITED' . property] = val
@@ -314,4 +288,34 @@ endfunction
 function! org#agenda#issoon(ts, ...) abort " {{{1
   let tcmp = get(a:, 1, org#timestamp#parse('now'))
   return !empty(org#agenda#nearest_time(tcmp, ts))
+endfunction
+
+function! org#agenda#completion(arglead, cmdline, curpos) abort " {{{1
+  " See :h :command-completion-customlist
+  " To be used with customlist, not custom. Works with spaces better, and regex are nice.
+  " autocmd unlets with CmdLineLeave
+  if !exists('g:org#agenda#complcache')
+    let compl = []
+    for [fname, outline] in items(org#agenda#build())
+      let fname = substitute(fname, resolve(fnamemodify(org#dir(), ':p')), '', '')
+      let names = map(keys(outline.lnums), 's:parent_names(outline.lnums, v:val)')
+      call map(names, 'fname . "/" . v:val')
+      call add(compl, fname)
+      call extend(compl, names)
+    endfor
+    call map(compl, 'v:val[:]')
+    let g:org#agenda#complcache = compl
+  endif
+  let compl = filter(copy(g:org#agenda#complcache), 'v:val =~? a:arglead')
+  return compl
+endfunction
+
+function! s:parent_names(lnums, ln) abort " {{{2
+  " return a string like hl1/hl2/hl3
+  let [name, ln] = ['', a:ln]
+  while ln > 0
+    let name = a:lnums[ln].ITEM . '/' . name
+    let ln = a:lnums[ln].PARENTLNUM
+  endwhile
+  return name
 endfunction

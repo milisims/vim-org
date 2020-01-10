@@ -25,6 +25,7 @@ function! org#headline#get(lnum, ...) abort " {{{1
   let info.FILE = bufname()
   let info.BUFNR = bufnr()
   let info.LNUM = lnum
+  let info.PARENTLNUM = info.LEVEL > 1 ? org#headline#find(info.LNUM, info.LEVEL - 1, 'bW') : 0
   call extend(info, org#timestamp#get(info.LNUM))
   call extend(info, org#property#all(info.LNUM), 'keep')
   return info
@@ -104,15 +105,6 @@ function! org#headline#open(direction) abort " {{{1
   startinsert!
 
   " TODO call formatting function
-  " if !org#headline#checktext(getline(next)) && next > 0
-  "   if !empty(getline(next))
-  "     let added_lines += 1
-  "     call append(next, '')
-  "   endif
-  "   if !empty(getline(next + added_lines + 1))
-  "     call append(next + added_lines, '')
-  "   endif
-  " endif
 endfunction
 
 function! org#headline#jump(count1, direction, same_level, mode) abort " {{{1

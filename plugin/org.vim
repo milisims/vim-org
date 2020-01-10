@@ -80,6 +80,11 @@ augroup org_keywords
   autocmd BufEnter,BufWritePost *.org call org#keyword#highlight()
 augroup END
 
+augroup org_completion
+  autocmd!
+  autocmd CmdlineLeave * silent! unlet g:org#agenda#complcache
+augroup END
+
 command! OrgCapture edit ~/org/inbox.org
 command! OrgSchedule call org#timestamp#prompt('.')
 
