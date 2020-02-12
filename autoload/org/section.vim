@@ -8,8 +8,11 @@ function! org#section#range(lnum, ...) abort " {{{1
   let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
   let inner = get(a:, 1, 0)
   let start = org#headline#at(lnum)
-  let end = org#headline#find(lnum, org#headline#level(start), 'nxW')
-  let end = end > 0 ? end - 1 : line('$')
+  if start == 0
+    return [1, line('$')]
+  endif
+  let end = org#headline#find(lnum, org#headline#level(start), 'nxW') - 1
+  let end = end == -1 ? line('$') : end
   if inner
     if start == end && org#headline#checkline(start)
       return [0, 0]  " Empty headline section, nothing to select
@@ -27,7 +30,6 @@ function! org#section#textobject(count, inner, mode) abort " {{{1
     endif
     return
   endif
-  echo line("'>") end
   if a:mode == 'v'
     let start = line("'<") < start ? line("'<") : start
     let end = line("'>") > end ? line("'>") : end

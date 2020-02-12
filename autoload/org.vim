@@ -91,49 +91,17 @@ function! org#refile(lnum, ...) abort " {{{1
 
   let agenda = org#agenda#list()
   let startbufnr = bufnr()
-  " let items = map(keys(tree), 'v:key+1 . ":\t" . fnamemodify(v:val, ":p:~:.")')
-  " let prompt = join(["File: "] + items, "\n") . "\n> "
   let prompt = 'Refile> '
   let destination = input(prompt, '', 'customlist,org#agenda#completion')
-  let [fname, headlines] = split(destination, '\.org\zs/')
-  let headlines = split(headlines, '/')
-  " FIXME : replace this somehow. shouldn't be this complicated to get the file.
-  let fname = resolve(fnamemodify(fname[0] == '/' ? fname : org#dir() . '/' . fname, ':p'))
-  let tree = org#agenda#tree()
-  try  " to ensure the user's view doesn't change
-    if !has_key(tree, fname)
-      " need to make the file and add each headline
-      let tree = {}
-      execute 'keepjumps edit' fname
-    else
-      " find how many headlines need to be added, if any.
-      let tree = tree[fname]
-      echo keys(tree)
-      execute 'keepjumps buffer' bufnr(fname)
-      while !empty(headlines)
-        let hls = filter(copy(tree.SUBTREES), 'v:val.ITEM == headlines[0]')
-        " let hls = filter(map(copy(tree.SUBTREES), 'v:val.ITEM'), 'v:val.ITEM == headlines[0]')
-        if empty(hls)
-          break
-        endif
-        let tree = hls[0]
-        call remove(headlines, 0)
-      endwhile
-    endif
 
-    let level = get(tree, 'LEVEL', 0) + 1
-    " let lnum = org#section#range(get(tree, 'LNUM', line('$')))[1]
-    let lnum = has_key(tree, 'LNUM') ? org#section#range(tree.LNUM)[1] : line('$') + 1
-
-    for hl in headlines
-      call org#headline#add(lnum, level, hl)
-      let [lnum, level] = [lnum + 1, level + 1]
-    endfor
-    call append(lnum - 1, text)
-    let shift = level - refile_level
-    let dir = shift > 0 ? 1 : -1
+  try
+    let target = org#headline#maketarget(destination)
+    execute 'split' target.FILE
+    let winnr = winnr()
+    call append(target.LNUM, text)  " FIXME will not preserve timestamps/properties
+    let shift = target.LEVEL - refile_level
     for i in range(abs(shift))
-      execute lnum . ',' lnum + (end - st) 'call org#shift(' . dir . ', "v")'
+      execute lnum . ',' lnum + (end - st) 'call org#shift(' . shift > 0 ? 1 : -1 . ', "v")'
     endfor
 
     if startbufnr != bufnr(fname)
@@ -141,22 +109,37 @@ function! org#refile(lnum, ...) abort " {{{1
     endif
 
   finally
-    execute 'keepjumps buffer ' startbufnr
+    execute winnr . 'wincmd c'
   endtry
+
 endfunction
 
+function! org#plan(lnum) abort " {{{1
+  let current = org#timestamp#get(a:lnum)
+  redraw
+  let prompt = "Planning:\n"
+  let prompt .= getline(org#headline#at(a:lnum)) . "\n"
+  let ts = getline(org#timestamp#at(a:lnum)) . "\n"
+  let prompt .= org#timestamp#checkline(a:lnum) ? ts  . "\n": ''
+  let prompt .= '> '
+  let time = input(prompt, '', 'customlist,org#timestamp#completion')
+  let [plantype; datetime] = split(time)
+  let timestamp = org#timestamp#from_text(join(datetime), current)
+  let timestamp.active = plantype != 'CLOSED'
+  call org#timestamp#set(a:lnum, timestamp)
+endfunction
 
 function! org#daily() abort " {{{1
   let agenda = org#agenda#daily(3)
-  let now = org#timestamp#parse('today')
-  let TimeMod = {hl -> {'module': org#timestamp#ftime2date(org#timestamp#getnearest(now, hl)[1])}}
+  let now = org#timestamp#parsetext('today')
+  let TimeMod = {hl -> {'module': org#timestamp#ftime2text(org#timestamp#getnearest(now, hl)[1])}}
   call map(agenda, {ix, hl -> org#agenda#toqf(ix, hl, (hl))})
   call setqflist(agenda)
   copen
 endfunction
 
 function! org#late() abort " {{{1
-  let agenda = filter(org#agenda#list(), {k, hl -> org#agenda#islate(hl)})
+  let agenda = filter(org#agenda#list(), {k, hl -> org#timestamp#islate(hl)})
   call sort(agenda, org#util#seqsortfunc(['FILE', 'LNUM']))
   call map(agenda, {ix, hl -> org#agenda#toqf(ix, hl)})
   call setqflist(agenda)
@@ -182,3 +165,27 @@ function! org#process_inbox() abort " {{{1
   endwhile
   " return agenda
 endfunction
+
+
+function! org#capture() range abort " {{{1
+  if !exists('g:org#capture#templates')
+    echoerr 'No capture templates see :h g:org#capture#templates'
+    return
+  endif
+  if type(g:org#capture#templates) == 4
+    let order = copy(get(g:, 'org#capture#order', sort(keys(g:org#capture#templates))))
+    let order = filter(order, 'has_key(g:org#capture#templates, v:val)')
+    let templates = map(order, {_, k -> extend(g:org#capture#templates[k], {'key': k})})
+  elseif type(g:org#capture#templates) == 3
+    let templates = copy(g:org#capture#templates)
+  else
+    throw 'Org: g:org#capture#templates must be a list or dictionary.'
+  endif
+
+  let templates = filter(templates, {_, t -> !has_key(t, 'context') || t.context()})
+  let capture = org#capture#window(templates)
+  if empty(capture) | return | endif
+  call org#capture#do(capture)
+endfunction
+
+

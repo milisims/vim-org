@@ -43,6 +43,7 @@ function! org#agenda#build(...) abort " {{{1
 
   " {{{2 get keywords per file
   try  " just ensure we eventually switch back to the starting buffer
+    split
     for fname in keys(updates)
       if bufnr(fname) >= 0
         execute 'keepjumps buffer' bufnr(fname)
@@ -62,6 +63,7 @@ function! org#agenda#build(...) abort " {{{1
       endif
       let tree = [metadata]
       let lnum = org#headline#find(1, 0, 'W')
+      " FIXME you messed with the search.
       while lnum > 0
         let headline = org#headline#get(lnum, metadata.keywords)
         let headline.SUBTREES = []
@@ -75,7 +77,7 @@ function! org#agenda#build(...) abort " {{{1
     endfor
 
   finally
-    execute 'keepjumps buffer' startbufnr
+    quit
   endtry
 
   " }}}
@@ -163,15 +165,16 @@ endfunction
 
 function! org#agenda#late() abort " {{{1
   " let agenda = filter(, {k, hl -> !empty(hl.TODO)})
-  let agenda = filter(org#agenda#list(), {k, hl -> org#agenda#islate(hl)})
+  let agenda = filter(org#agenda#list(), {k, hl -> org#timestamp#islate(hl)})
+  let agenda = filter(agenda, {k, hl -> empty(hl.DONE)})
   call sort(agenda, org#util#seqsortfunc(['FILE', 'LNUM']))
   return agenda
 endfunction
 
 function! org#agenda#daily(...) abort " {{{1
   let days = get(a:, 1, 1)
-  let time = org#timestamp#parse('now')
-  let agenda = filter(org#agenda#list(), {_, hl -> org#agenda#isplanned(time, hl)})
+  let time = org#timestamp#parsetext('now')
+  let agenda = filter(org#agenda#list(), {_, hl -> org#timestamp#isplanned(time, hl)})
   call sort(agenda, {a, b -> org#timestamp#tdiff(time, b) - org#timestamp#tdiff(time, a)})
   return agenda
 endfunction
@@ -209,22 +212,6 @@ function! org#agenda#toqf(ix, item, ...) abort " {{{1
   return qfitem
 endfunction
 
-function! org#agenda#daily_separator(qfagenda, agenda) abort " {{{1
-  " Assumes args are sorted by time already.
-  let qfa = a:qfagenda
-  let separators = [[0, org#timestamp#parse('today')]]
-  let times = map(copy(a:agenda), {ix, hl -> [ix, org#agenda#nearest_time(separators[0])]})
-  for ix in range(len(qfa))
-    if times[ix][1] > separators[0][1] + 86400
-      call insert(separators, [ix, org#timestamp#parse('+' . len(separators) . 'd')])
-    endif
-  endfor
-
-  for [ix, time] in times  " times is reversed
-    call insert(qfa, {'text': org#timestamp#ftime2date(time, 0)}, ix)
-  endfor
-  return qfa
-endfunction
 
 function! org#agenda#refine(regex) abort " {{{1
   try
@@ -234,62 +221,6 @@ function! org#agenda#refine(regex) abort " {{{1
     echoerr 'Org: No agenda to refine'
   endtry
 endfunction
-function! org#agenda#nearest_time(ts, ...) abort " {{{1
-  " Allows to compute which happened first and by how far.
-  " t1 should be a float, t2 should be a timestamp dict
-  " Assumes one of the three exists
-  let tcmp = get(a:, 1, org#timestamp#parse('now'))
-  let tdiff = {}
-  for plan in ['TIMESTAMP', 'SCHEDULED', 'DEADLINE']
-    if !empty(a:ts[plan])
-      let tdiff[plan] = org#timestamp#tdiff(tcmp, a:ts[plan])
-    endif
-  endfor
-
-  if has_key(tdiff.TIMESTAMP) && tdiff.TIMESTAMP >= 0 && tdiff.TIMESTAMP <= s:p.d
-    return ['TIMESTAMP', a:ts.TIMESTAMP]
-  elseif has_key(tdiff.DEADLINE) && tdiff.DEADLINE <= 0 && tdiff.DEADLINE >= s:p.d * g:org#timestamp#deadline#time
-    return ['DEADLINE', a:ts.DEADLINE]
-  elseif has_key(tdiff.SCHEDULED) && tdiff.SCHEDULED >= 0 && tdiff.SCHEDULED <= s:p.d * g:org#timestamp#scheduled#time
-    return ['SCHEDULED', a:ts.SCHEDULED]
-  endif
-  return [] " unplanned w.r.t now
-endfunction
-
-function! org#agenda#isplanned(ts, ...) abort " {{{1
-  " There is a timestamp, schedule, or deadline in the future.
-  let tcmp = get(a:, 1, org#timestamp#parse('now'))
-  for plan in ['TIMESTAMP', 'SCHEDULED', 'DEADLINE']
-    if !empty(a:ts[plan])
-      if org#timestamp#tdiff(a:ts[plan], tcmp) >= 0
-        return 1
-      endif
-    endif
-  endfor
-  return 0
-endfunction
-
-function! org#agenda#islate(ts, ...) abort " {{{1
-  " There is a timestamp, schedule, or deadline in the future.
-  " Not late if no planning!
-  let tcmp = get(a:, 1, org#timestamp#parse('now'))
-  let tdiff = {}
-  for plan in ['TIMESTAMP', 'SCHEDULED', 'DEADLINE']
-    if !empty(a:ts[plan])
-      let tdiff[plan] = org#timestamp#tdiff(tcmp, a:ts[plan])
-    endif
-  endfor
-  if empty(tdiff)
-    return 0
-  endif
-  return !org#agenda#isplanned(a:ts, tcmp)
-endfunction
-
-function! org#agenda#issoon(ts, ...) abort " {{{1
-  let tcmp = get(a:, 1, org#timestamp#parse('now'))
-  return !empty(org#agenda#nearest_time(tcmp, ts))
-endfunction
-
 function! org#agenda#completion(arglead, cmdline, curpos) abort " {{{1
   " See :h :command-completion-customlist
   " To be used with customlist, not custom. Works with spaces better, and regex are nice.

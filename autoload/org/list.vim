@@ -87,7 +87,7 @@ function! org#list#level(lnum) abort " {{{1
   return level
 endfunction
 
-function! s:list_bullet_regex(text) abort " {{{1
+function! s:list_bullet_regex(text) abort " {{{2
   " let [whitespace, bullet] = ['\s*', '\v(([-+*]|([0-9]+|[A-Za-z])[.)])']
   " TODO should s:list_bullet_regex use very magic expressions?
   let bullet = split(a:text)[0]
@@ -242,6 +242,25 @@ endfunction
 
 function! org#list#reorder() abort " {{{1
 endfunction " TODO reorder_listitem
+
+function! org#list#item_add(lnum, text, ...) abort " {{{1
+  let checkbox = get(a:, 1, 0)
+  if org#list#checkline(a:lnum)
+    let [start, end] = org#list#item_range(a:lnum)
+    let [whitespace, bullet] = matchlist(getline(start), '\v^(\s*)(%([-+*]|%(\d+|\a)[.)]))')[1:2]
+  else
+    let [end, whitespace, bullet] = [a:lnum, '  ', '-']  " TODO getme from options
+  endif
+  if type(a:text) == 3  " list
+    let bws = whitespace . substitute(bullet, '.', ' ', 'g') . ' '
+    let bullet = bullet . (checkbox ? ' [ ] ' : ' ')
+    let text = [whitespace . bullet . a:text[0]] + map(a:text[1:], 'bws . v:val')
+  else  " assume string
+    let bullet = bullet . (checkbox ? ' [ ] ' : ' ')
+    let text = whitespace . bullet . a:text
+  endif
+  call append(end, text)
+endfunction
 
 function! org#list#checkbox_add() abort " {{{1
   let line = getline('.')

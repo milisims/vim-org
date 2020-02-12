@@ -8,9 +8,10 @@ setlocal foldmethod=expr
 setlocal foldexpr=org#fold#expr(v:lnum)
 setlocal foldtext=org#fold#text()
 setlocal formatoptions=1tronlj
-setlocal commentstring='#%s'
+setlocal commentstring=#\ %s
 setlocal comments=b:+,b:-,fb:*
 setlocal formatlistpat=^\\s*\\w\\+[.)]\\s*
+setlocal formatexpr=org#util#format()
 
 " So backspace and <C-t> and <C-d> behave consistently
 setlocal softtabstop=0
@@ -79,7 +80,9 @@ nmap <buffer> [u <Plug>(org-headline-lower-prev)
 xmap <buffer> ]u <Plug>(org-headline-lower-next)
 xmap <buffer> [u <Plug>(org-headline-lower-prev)
 
-inoremap <buffer> <C-g>t <C-o>diW<C-r>=org#timestamp#ftime2date(org#timestamp#parse(@"))<Cr>
-inoremap <buffer> <C-g><C-t> <C-o>diW<C-r>=org#timestamp#ftime2date(org#timestamp#parse(@"))<Cr>
+inoremap <buffer> <C-g>t <C-o>diW<C-r>=org#timestamp#ftime2text(org#timestamp#parsetext(@"))<Cr>
+inoremap <buffer> <C-g><C-t> <C-o>diW<C-r>=org#timestamp#ftime2text(org#timestamp#parsetext(@"))<Cr>
 
 " DEV STUFF
+
+command! -nargs=* -complete=customlist,org#timestamp#completion Plan call org#plan('.')

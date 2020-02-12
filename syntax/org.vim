@@ -66,7 +66,7 @@ highlight link orgHeadline8 Function
 highlight link orgHeadline9 String
 highlight link orgHeadlineN Identifier
 
-highlight link orgHeadlineInnerStar String
+highlight link orgHeadlineInnerStar Comment
 highlight link orgHeadlineLastStar Number
 highlight link orgTodo Todo
 highlight link orgDone Conditional
@@ -187,9 +187,9 @@ hi link orgPropertyName Identifier
 "" Elements {{{
 "syntax cluster orgElements contains=orgHorizontalRule,orgComment
 "syntax match orgHorizontalRule /\s*-\{5,}\s*$/
-"syntax match orgComment /^#$/
+syntax match orgComment /^\s*#\s\+.*$/
 "syntax match orgComment /^#\s\+.*$/ contains=orgTodo
-"highlight link orgComment Comment
+highlight link orgComment Comment
 "" }}}
 
 "" Objects {{{

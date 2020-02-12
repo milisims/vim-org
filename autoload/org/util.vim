@@ -5,12 +5,16 @@ function! org#util#search(lnum, pattern, flags, ...) abort " {{{1
   let cursor = getcurpos()[1:]
   let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
   let flags = a:flags
+  " this really needs to be cleaned up.
+  if lnum == line('$') && flags =~# 'x' && flags =~# 'W' && flags !~# 'b'
+    return 0
+  endif
   if flags =~# 'x'
     let flags = substitute(flags, 'x', '', 'g')
     let lnum += (flags =~# 'b' ? -1 : 1)
   endif
   if lnum >= line('$')
-    call cursor(line('$'), col([line('$'), '$']))
+    call cursor(line('$'), flags =~# 'b' ? col([line('$'), '$']) : 1)
     let flags = flags . (flags =~# 'b' ? '' : 'c')
   elseif lnum >= 0
     call cursor(lnum + (flags =~# 'b' ? 1 : 0), 1)
@@ -23,7 +27,7 @@ function! org#util#search(lnum, pattern, flags, ...) abort " {{{1
   return search
 endfunction
 
-function! org#util#formatexpr() abort " {{{1
+function! org#util#format(...) abort " {{{1
 " The |v:lnum|  variable holds the first line to be formatted.
 " The |v:count| variable holds the number of lines to be formatted.
 " The |v:char|  variable holds the character that is going to be
@@ -49,6 +53,21 @@ function! org#util#formatexpr() abort " {{{1
   " ** any other header
   "
   " no other formatting
+  if exists('a:2')
+    let [lnum, end] = [a:1, a:2]
+  elseif exists('a:1')
+    let [lnum, end] = [a:1, a:1]
+  else
+    let [lnum, end] = [v:lnum, v:lnum + v:count]
+  endif
+  let lnum = org#headline#find(lnum, 0, 'nbW')
+  while lnum <= end && lnum > 0
+    call org#headline#format(lnum)
+    " FIXME This won't work for ranges properly, modifying text as we go
+    let lnum = org#headline#find(lnum, 0, 'nxW')
+  endwhile
+
+  " Format lists
   return
 endfunction
 

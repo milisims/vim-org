@@ -59,6 +59,9 @@ onoremap <silent> <Plug>(org-section-around) :<C-u>call org#section#textobject(v
 nnoremap <silent> <Plug>(org-headline-open-above) :call org#headline#open(-1)<CR>
 nnoremap <silent> <Plug>(org-headline-open-below) :call org#headline#open(1)<CR>
 
+nnoremap <silent> <Plug>(org-capture) :call org#capture()<Cr>
+xnoremap <silent> <Plug>(org-capture) :call org#capture()<Cr>
+
 " }}}
 
 " org-goto is like searching in vim.
@@ -85,13 +88,14 @@ augroup org_completion
   autocmd CmdlineLeave * silent! unlet g:org#agenda#complcache
 augroup END
 
-command! OrgCapture edit ~/org/inbox.org
-command! OrgSchedule call org#timestamp#prompt('.')
+command! -nargs=? Capture call org#capture('c')
 
-"TODO:
-" Commands:
-" Agenda
-" Capture
+" TODO:
+"  Commands:
+"  Agenda
+"  Refile
+"  Plan
+"  Capture
 
 " TODO:
 " Formatting:
