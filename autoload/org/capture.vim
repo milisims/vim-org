@@ -22,6 +22,7 @@
         \ 'checkitem': '`input("List item> ")`',
         \ 'plain': '`input("Text> ")`'
         \ }
+
   let g:org#capture#defaults.entry = [
         \ '* `input("Description> ")`',
         \ ':PROPERTIES:',
@@ -94,7 +95,8 @@ endfunction
 
 function! s:add_entry(target, text, prepend) abort " {{{2
   let lnum = org#section#range(a:target.LNUM)[1]
-  let text = a:text
+  let lnum = prevnonblank(lnum)  " TODO + 1, check for edge
+  let text = type(a:text) == 1 ? [a:text] : a:text
   call append(lnum, text)
   if has_key(a:target, 'LEVEL')
     let range = (lnum + 1 + empty(getline(lnum))). ',' . (lnum + len(text))
