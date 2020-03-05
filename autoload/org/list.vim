@@ -20,21 +20,21 @@
 
 " Rules for regex: only group the components we care about potentially returning.
 " Almost never whitespace.
-let org#list#regex#ordered_bullet   = '\v^\s*(\d+|\a)[.)]%(\s+|$)'
-let org#list#regex#unordered_bullet = '\v^\s*([-+]|\s\*)%(\s+|$)'
-let org#list#regex#bullet           = '\v^\s*(%([-+*]|%(\d+|\a)[.)]))%(\s+|$)'
-let org#list#regex#counter_start    = '\v(\[\@%(:start:)?(\d+|\a)\]\s*)'
-let org#list#regex#checkbox         = '\v(\[[ Xx-]\]%(\s+|$))'
-let org#list#regex#checkedbox       = '\v(\[[Xx]\]%(\s+|$))'
-let org#list#regex#uncheckedbox     = '\v(\[[ ]\]%(\s+|$))'
-let org#list#regex#tag              = '\v(%(.*)\s+::%(\s+|$))'
-let org#list#regex#end              = '^\s*\n\s*\n'
+let g:org#list#regex#ordered_bullet   = '\v^\s*(\d+|\a)[.)]%(\s+|$)'
+let g:org#list#regex#unordered_bullet = '\v^\s*([-+]|\s\*)%(\s+|$)'
+let g:org#list#regex#bullet           = '\v^\s*(%([-+*]|%(\d+|\a)[.)]))%(\s+|$)'
+let g:org#list#regex#counter_start    = '\v(\[\@%(:start:)?(\d+|\a)\]\s*)'
+let g:org#list#regex#checkbox         = '\v(\[[ Xx-]\]%(\s+|$))'
+let g:org#list#regex#checkedbox       = '\v(\[[Xx]\]%(\s+|$))'
+let g:org#list#regex#uncheckedbox     = '\v(\[[ ]\]%(\s+|$))'
+let g:org#list#regex#tag              = '\v(%(.*)\s+::%(\s+|$))'
+let g:org#list#regex#end              = '^\s*\n\s*\n'
 
 " RENAME:
-let org#list#regex#upto#checkbox = g:org#list#regex#bullet . g:org#list#regex#counter_start[2:]  . '?' . g:org#list#regex#checkbox[2:]
-let org#list#regex#upto#checkedbox = g:org#list#regex#bullet . g:org#list#regex#counter_start[2:] . '?' . g:org#list#regex#checkedbox[2:]
+let g:org#list#regex#upto#checkbox = g:org#list#regex#bullet . g:org#list#regex#counter_start[2:]  . '?' . g:org#list#regex#checkbox[2:]
+let g:org#list#regex#upto#checkedbox = g:org#list#regex#bullet . g:org#list#regex#counter_start[2:] . '?' . g:org#list#regex#checkedbox[2:]
 
-let org#list#regex#decompose = [org#list#regex#bullet, org#list#regex#counter_start[2:],
+let g:org#list#regex#decompose = [org#list#regex#bullet, org#list#regex#counter_start[2:],
       \ org#list#regex#checkbox[2:], org#list#regex#tag[2:], org#list#regex#end]
 " let org#list#regex#full = join(org#list#regex#decompose, '')
 

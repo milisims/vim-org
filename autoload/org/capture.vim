@@ -195,6 +195,7 @@ endfunction
 
 function! org#capture#window(templates) abort " {{{1
   let templates = map(copy(a:templates), {_, t -> [t.key, t.description]})
+  " let templates = map(templates, {_, t -> [t[0], type(t[1]) == 2 ? t[1]() : t[1]]})
   let fulltext = s:capture_text(templates)
   let winid = has('nvim') ? s:nvimwin(fulltext) : s:vimwin(fulltext)
   let selection = ''
@@ -293,7 +294,4 @@ function! s:getlines() abort " {{{2
     noautocmd wincmd k
   endwhile
   return lines
-endfunction
-
-function! org#capture#fromsnippet() abort " {{{1
 endfunction
