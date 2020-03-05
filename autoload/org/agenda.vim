@@ -19,74 +19,48 @@ function! org#agenda#build(...) abort " {{{1
   " TODO: do we want a 'deepcopy' for the agenda cache? Want the subtrees etc to point at
   " the right places?
   let force = get(a:, 1, 0)
-  let qf = getqflist()  " to restore
-  let startbufnr = bufnr()
-
-  " {{{2 get modified times & files to update
-  let updates = {}
   for fname in org#agenda#files()
     let fname = resolve(fnamemodify(fname, ':p'))
-    let mtime = getftime(fname)
-    if force || !has_key(s:agendaCache, fname) || s:agendaCache[fname].mtime < mtime
-      let updates[fname] = {
-            \ 'mtime': mtime,
-            \ 'keywords': {'todo': [], 'done': []},
-            \ 'SUBTREES': [],
-            \ 'lnums': {}
-            \ }
-    endif
+    let s:agendaCache[fname] = org#agenda#summarize(fname, force)
   endfor
-
-  if empty(updates)
-    return deepcopy(s:agendaCache)
-  endif
-
-  " {{{2 get keywords per file
-  try  " just ensure we eventually switch back to the starting buffer
-    split
-    for fname in keys(updates)
-      if bufnr(fname) >= 0
-        execute 'keepjumps buffer' bufnr(fname)
-      else
-        execute 'keepjumps edit' fname
-      endif
-      let [todo, done] = org#keyword#get()
-      let updates[fname].keywords.todo = todo
-      let updates[fname].keywords.done = done
-    endfor
-
-  " {{{2 get headlines per file
-    execute 'vimgrep /^\*/j' join(keys(updates))
-    for [fname, metadata] in items(updates)
-      if resolve(fnamemodify(bufname(), ':p')) != fname
-        execute 'keepjumps buffer' fname
-      endif
-      let tree = [metadata]
-      let lnum = org#headline#find(1, 0, 'W')
-      " FIXME you messed with the search.
-      while lnum > 0
-        let headline = org#headline#get(lnum, metadata.keywords)
-        let headline.SUBTREES = []
-        let metadata.lnums[lnum] = headline
-        call filter(tree, {_, st -> st is metadata || st.LEVEL < headline.LEVEL})
-        " call add(tree[-1][tree[-1] is metadata ? 'subtrees' : 'SUBTREES'], headline)
-        call add(tree[-1].SUBTREES, headline)
-        call add(tree, headline)
-        let lnum = org#headline#find(lnum, 0, 'Wx')
-      endwhile
-    endfor
-
-  finally
-    quit
-  endtry
-
-  " }}}
-
-  call setqflist(qf)
-  call extend(s:agendaCache, updates, 'force')
   return deepcopy(s:agendaCache)
 endfunction
 let s:agendaCache = {}
+
+function! org#agenda#summarize(fname, ...) abort " {{{1
+  let force = get(a:, 1, 0)
+  let fname = resolve(fnamemodify(a:fname, ':p'))
+  let mtime = getftime(fname)
+  if !force && has_key(s:agendaCache, fname) && s:agendaCache[fname].mtime == mtime
+    return s:agendaCache[fname]
+  endif
+
+  let fsummary = {'mtime': mtime, 'keywords': {'todo': [], 'done': []}, 'SUBTREES': [], 'lnums': {}}
+
+  let startbuf = bufnr()
+  execute 'split' fname
+  try
+    let [todo, done] = org#keyword#get()
+    let fsummary.keywords.todo = todo
+    let fsummary.keywords.done = done
+
+    let tree = [fsummary]
+    let lnum = org#headline#find(1, 0, 'W')
+    while lnum > 0
+      let headline = org#headline#get(lnum, fsummary.keywords)
+      let headline.SUBTREES = []
+      let fsummary.lnums[lnum] = headline
+      " Not using tree[-1] so it doesn't copy -- want it to modify. Could rewrite?
+      call filter(tree, {_, st -> st is fsummary || st.LEVEL < headline.LEVEL})
+      call add(tree[-1].SUBTREES, headline)
+      call add(tree, headline)
+      let lnum = org#headline#find(lnum, 0, 'Wx')
+    endwhile
+  finally
+    quit
+  endtry
+  return fsummary
+endfunction
 
 function! org#agenda#files() abort " {{{1
   return sort(glob(org#dir() . '/**/*.org', 0, 1))
