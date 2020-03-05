@@ -69,8 +69,15 @@ endfunction
 
 function! org#agenda#list(...) abort " {{{1
   " a:1 regex of matching filenames
-  let regex = get(a:, 1, '')
-  let fullAgenda = filter(org#agenda#build(), {k, v -> k =~ regex})
+  " TODO list of a filename
+  let expr = get(a:, 1, '')
+  if type(expr) == 4
+    let fullAgenda = expr
+  elseif type(expr) == 1
+    let fullAgenda = filter(org#agenda#build(), {k, v -> k =~ expr})
+  else
+    throw 'Org: {expr} must be a list or an agenda'
+  endif
 
   let agendaList = []
   for agenda in values(fullAgenda)
@@ -83,8 +90,9 @@ endfunction
 function! org#agenda#tree(...) abort " {{{1
   " a:1 regex of matching filenames
   " returns {filename: {level: {lnum: headline, ...}, ...}, ...}
-  let regex = get(a:, 1, '')
-  return filter(org#agenda#build(), {k, v -> k =~ regex})
+  let expr = get(a:, 1, '')
+  let fullAgenda = filter(org#agenda#build(), {k, v -> k =~ expr})
+  return fullAgenda
 endfunction
 
 function! org#agenda#inherit(headline, property, ...) abort " {{{1
