@@ -99,3 +99,8 @@ function! org#property#drawer_range(lnum, ...) abort " {{{1
   endif
   return pend < pstart ? [0, 0] : [pstart, pend]
 endfunction
+
+function! org#property#isindrawer(lnum) abort " {{{1
+  let [lstart, lend] = org#property#drawer_range(a:lnum)
+  return a:lnum >= lstart && a:lnum <= lend
+endfunction
