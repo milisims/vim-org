@@ -84,8 +84,8 @@ augroup org_keywords
 augroup END
 
 augroup org_completion
+  " setup for agenda#completion
   autocmd!
-  autocmd CmdlineLeave * silent! unlet g:org#agenda#complcache
 augroup END
 
 command! -nargs=? Capture call org#capture('c')

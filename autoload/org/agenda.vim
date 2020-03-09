@@ -218,6 +218,7 @@ function! org#agenda#completion(arglead, cmdline, curpos) abort " {{{1
     endfor
     call map(compl, 'v:val[:]')
     let g:org#agenda#complcache = compl
+    autocmd org_completion CmdlineLeave * ++once silent! unlet g:org#agenda#complcache
   endif
   let compl = filter(copy(g:org#agenda#complcache), 'v:val =~? a:arglead')
   return compl
