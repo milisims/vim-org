@@ -1,14 +1,4 @@
 syntax clear
-" setlocal foldmethod=syntax this should go somewhere, probably
-
-" When several syntax items may match, these rules are used:
-
-" 1. When multiple Match or Region items start in the same position, the item
-"    defined last has priority.
-" 2. A Keyword has priority over Match and Region items.
-" 3. An item that starts in an earlier position has priority over items that
-"    start in later positions.
-
 
 " Dev-help {{{
 nnoremap <buffer> <F7> :set ft=org<CR>:call SynStack()<CR>
@@ -27,16 +17,18 @@ syntax cluster orgHeadline contains=orgHeadline1,orgHeadline2,orgHeadline3
 syntax cluster orgHeadline add=orgHeadline4,orgHeadline5,orgHeadline6,orgHeadline7
 syntax cluster orgHeadline add=orgHeadline8,orgHeadline9,orgHeadlineN
 
-syntax match orgHeadline1 /^\*\{1}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline2 /^\*\{2}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline3 /^\*\{3}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline4 /^\*\{4}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline5 /^\*\{5}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline6 /^\*\{6}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline7 /^\*\{7}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline8 /^\*\{8}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline9 /^\*\{9}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadlineN /^\*\{10,}[^*].*$/ contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax region orgSection start=/^\z(\*\+\)[^*]/ end=/^\ze\(\z1\*\)\@!\*\+/ fold transparent contains=@orgHeadline
+
+syntax match orgHeadline1 /^\*\{1}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadline2 /^\*\{2}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadline3 /^\*\{3}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadline4 /^\*\{4}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadline5 /^\*\{5}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadline6 /^\*\{6}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadline7 /^\*\{7}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadline8 /^\*\{8}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadline9 /^\*\{9}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadlineN /^\*\{10,}[^*].*$/ contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
 
 syntax match orgHeadlineStars contained /^\*\+/ skipwhite
       \ contains=orgHeadlineInnerStar,orgHeadlineLastStar
@@ -75,13 +67,7 @@ highlight link orgHeadlinePriority Error
 highlight link orgHeadlineTags SpecialComment
 " highlight link orgHeadlineText Normal
 
-" TODO color different levels of headlines with matchadd?
-
 " NOTE: empty lines belong to the largest element ending before them
-
-" syntax region orgSection contained start=/^\s/ end=/$\_^\*/  TODO
-" TODO orgSectionText is a bit of a hack.
-" syntax region orgSectionText start=/^\s*\w\+/ end=/^\ze\s*\W/ contains=@Spell
 
 syntax cluster orgPlanning contains=orgPlanDeadline,orgPlanScheduled,orgPlanClosed,orgPlanTime
 
@@ -103,7 +89,7 @@ highlight link orgPlanTime Comment
 " syntax region orgTimestamp oneline keepend transparent start='\[' end=']'  contains=orgDate,orgTime,orgRepeater
 syntax match  orgDate      contained  /\d\{4}-\d\d-\d\d\s\a\+/    transparent
 syntax match  orgTime      contained  /\d\{1,2}:\d\d/                 transparent
-syntax match  orgRepeater  contained  /\([+-]{1,2}\|\.+\)\d\+[hdwmy]/ transparent
+syntax match  orgRepeater  contained  /\v([+-]{1,2}|\.+)\d+[hdwmy]/ transparent
 
 highlight link orgPlanning Comment
 
@@ -120,7 +106,7 @@ hi link orgListCheck Todo
 hi link orgListTag SpecialComment
 
 syntax region orgPropertyDrawer contained keepend matchgroup=orgPropertyDrawerEnds
-      \ start=/^:PROPERTIES:$/ end=/^:END:$/ contains=orgNodeProperty,orgNodeMultiProperty
+      \ start=/^:PROPERTIES:$/ end=/^:END:$/ contains=orgNodeProperty,orgNodeMultiProperty fold
 syntax region orgNodeProperty contained keepend matchgroup=orgPropertyName
       \ start=/^:\S\+[^+]:/ end=/$/ oneline
 syntax region orgNodeMultiProperty contained keepend matchgroup=orgPropertyName
@@ -130,6 +116,9 @@ hi link orgNodeProperty SpecialComment
 hi link orgNodeMultiProperty SpecialComment
 hi link orgPropertyDrawerEnds Comment
 hi link orgPropertyName Identifier
+
+" syntax sync match orgSyncPropertyDrawer grouphere orgPropertyDrawer /\v^(:PROPERTIES:$)@=/
+syntax sync match orgSync grouphere orgSection /\v^%(\*+)@=/
 
 " source block
 " #+BEGIN_SRC PARAMETERS
@@ -258,3 +247,5 @@ highlight link orgComment Comment
 "" inlinetasks
 "" Tables
 "" }}}
+
+let b:current_syntax = "org"

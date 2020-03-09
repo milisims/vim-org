@@ -1,6 +1,4 @@
 " setlocal spell
-" setlocal foldmethod=syntax
-
 " setlocal indentexpr=GetOrgIndent()
 " Default is nolisp nosmartindent autoindent.
 setlocal indentkeys=0#,0*,0-,0+,0.,o,O,!^F
@@ -17,8 +15,6 @@ setlocal formatexpr=org#util#format()
 setlocal softtabstop=0
 setlocal shiftwidth=2
 setlocal expandtab
-
-call org#keyword#highlight()
 
 " TODO: counts!
 " Questionable:

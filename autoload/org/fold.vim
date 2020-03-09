@@ -27,9 +27,8 @@ function! org#fold#text(...) abort " {{{1
 endfunction
 
 function! s:headline_text(fold) abort " {{{2
-  let hl = org#headline#get(a:fold.start)
-
-  let tagstr = empty(hl.TAGS) ? '' : ':' . join(hl.TAGS, ':') . ':'
+  " TODO use org#agenda (rename to org#tree?)
+  let [maintext, tagstr] = matchlist(getline(a:fold.start), '\v^(\*+.{-})\s*(:%([[:alpha:]_@#%]+:)+)?\s*$')[1:2]
   let linestr = ' ' . (1 + a:fold.end - a:fold.start) . ' lines '
   let linestr_len = max([strwidth(linestr) + 1, 10])
   let linestr_spacing = repeat(' ', linestr_len - strwidth(linestr))
@@ -43,7 +42,6 @@ function! s:headline_text(fold) abort " {{{2
   let width = winwidth(0) - &foldcolumn - &number * &numberwidth - 2
   let maxlen = width - strwidth(tagstr . timestr) - linestr_len - 5
 
-  let maintext = matchstr(getline(a:fold.start), '\v^\*+.{-}\ze%(:%([[:alpha:]_@#%]+:)+)?\s*$')
   if strwidth(maintext) > maxlen
     let maintext = split(maintext, '\s\zs')
     let hltext = remove(maintext, 0)
