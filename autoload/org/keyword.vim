@@ -28,6 +28,37 @@ function! org#keyword#cycle(direction) abort " {{{1
   call setline('.', new_line)
 endfunction
 
+function! org#keyword#op(up) abort " {{{1
+  let reg_save = @@
+
+  let lnum = org#headline#find('.', 0, 'nbW')
+  if a:up
+    while empty(org#headline#keyword(getline(lnum))) && org#headline#level(lnum) > 1
+      let lnum = org#headline#find(lnum, 0, 'nbxW')
+    endwhile
+  endif
+  if org#headline#has_keyword(getline(lnum))
+    normal! m`
+    call cursor([lnum, 1])
+    normal! wve
+    if v:operator == 'd'
+      normal! oho
+    endif
+  else
+    " TODO exclusive/inclusive operators?
+    if v:operator == 'y'
+      return
+    endif
+    normal! m`
+    call cursor([lnum, matchend(getline(lnum), '\**') + 1])
+    normal! v
+    if v:operator == 'c'
+      call feedkeys("\<C-r>\"\<C-g>U\<Left>\<Space>")
+    endif
+  endif
+
+endfunction
+
 function! org#keyword#all(...) abort " {{{1
   " 'todo' and 'done' give lists, as does 'all'. Default is a dictionary
   " TODO combine all and get -- keyword cache in agenda_cache?

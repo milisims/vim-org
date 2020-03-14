@@ -28,6 +28,9 @@ xnoremap <silent> <Plug>(org-shift-left)       :call org#shift(-1, 'v')<CR>gv
 inoremap <silent> <Plug>(org-shift-right) <C-o>:call org#shift(1, 'i')<CR>
 inoremap <silent> <Plug>(org-shift-left)  <C-o>:call org#shift(-1, 'i')<CR>
 
+onoremap <silent> <Plug>(org-keyword-up)      :<C-u>call org#keyword#op(1)<CR>
+onoremap <silent> <Plug>(org-keyword-current) :<C-u>call org#keyword#op(0)<CR>
+
 " Motions:
 nnoremap <silent> <Plug>(org-headline-lower-prev) :<C-u>call org#headline#lower(v:count1, -1, 'n')<CR>
 nnoremap <silent> <Plug>(org-headline-lower-next) :<C-u>call org#headline#lower(v:count1,  1, 'n')<CR>
