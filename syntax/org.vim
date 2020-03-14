@@ -17,7 +17,6 @@ syntax cluster orgHeadline contains=orgHeadline1,orgHeadline2,orgHeadline3
 syntax cluster orgHeadline add=orgHeadline4,orgHeadline5,orgHeadline6,orgHeadline7
 syntax cluster orgHeadline add=orgHeadline8,orgHeadline9,orgHeadlineN
 
-syntax region orgSection start=/^\z(\*\+\)[^*]/ end=/^\ze\(\z1\*\)\@!\*\+/ fold transparent contains=@orgHeadline
 
 syntax match orgHeadline1 /^\*\{1}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
 syntax match orgHeadline2 /^\*\{2}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
@@ -71,14 +70,10 @@ highlight link orgHeadlineTags SpecialComment
 
 syntax cluster orgPlanning contains=orgPlanDeadline,orgPlanScheduled,orgPlanClosed,orgPlanTime
 
-syntax match orgPlanDeadline contained /^\s*DEADLINE:.*/  contains=orgTimestamp
-      \ nextgroup=orgSection,orgPropertyDrawer skipnl
-syntax match orgPlanScheduled contained /^\s*SCHEDULED:.*/ contains=orgTimestamp
-      \ nextgroup=orgSection,orgPropertyDrawer skipnl
-syntax match orgPlanClosed contained /^\s*CLOSED:.*/    contains=orgTimestamp
-      \ nextgroup=orgSection,orgPropertyDrawer skipnl
-syntax match orgPlanTime contained /^\s*<.*/    contains=orgTimestamp
-      \ nextgroup=orgSection,orgPropertyDrawer skipnl
+syntax match orgPlanDeadline contained /^\s*DEADLINE:.*/  contains=orgTimestamp nextgroup=orgPropertyDrawer skipnl
+syntax match orgPlanScheduled contained /^\s*SCHEDULED:.*/ contains=orgTimestamp nextgroup=orgPropertyDrawer skipnl
+syntax match orgPlanClosed contained /^\s*CLOSED:.*/    contains=orgTimestamp nextgroup=orgPropertyDrawer skipnl
+syntax match orgPlanTime contained /^\s*<.*/    contains=orgTimestamp nextgroup=orgPropertyDrawer skipnl
 
 highlight link orgPlanDeadline Comment
 highlight link orgPlanScheduled Comment
@@ -117,8 +112,8 @@ hi link orgNodeMultiProperty SpecialComment
 hi link orgPropertyDrawerEnds Comment
 hi link orgPropertyName Identifier
 
-" syntax sync match orgSyncPropertyDrawer grouphere orgPropertyDrawer /\v^(:PROPERTIES:$)@=/
-syntax sync match orgSync grouphere orgSection /\v^%(\*+)@=/
+syntax sync match orgSyncPropertyDrawer grouphere orgPropertyDrawer /\v^(:PROPERTIES:$)@=/
+" syntax sync match orgSync grouphere orgSection /\v^%(\*+)@=/
 
 " source block
 " #+BEGIN_SRC PARAMETERS
