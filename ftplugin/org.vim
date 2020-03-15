@@ -35,6 +35,12 @@ xmap <buffer> ic <Plug>(org-section-inner)
 omap <buffer> ac <Plug>(org-section-around)
 omap <buffer> ic <Plug>(org-section-inner)
 
+omap <buffer> ak <Plug>(org-keyword-up)
+omap <buffer> ik <Plug>(org-keyword-current)
+
+xmap <buffer> ak <Plug>(org-keyword-up)
+xmap <buffer> ik <Plug>(org-keyword-current)
+
 nmap <buffer> ]k <Plug>(org-todo-cycle)
 nmap <buffer> [k <Plug>(org-todo-cycle-back)
 
