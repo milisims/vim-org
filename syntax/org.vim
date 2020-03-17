@@ -17,17 +17,29 @@ syntax cluster orgHeadline contains=orgHeadline1,orgHeadline2,orgHeadline3
 syntax cluster orgHeadline add=orgHeadline4,orgHeadline5,orgHeadline6,orgHeadline7
 syntax cluster orgHeadline add=orgHeadline8,orgHeadline9,orgHeadlineN
 
+" syntax region orgSection start=/^\z(\*\+\)[^*]/ end=/^\ze\(\z1\*\)\@!\*\+/ fold transparent contains=@orgHeadline,orgSection
 
-syntax match orgHeadline1 /^\*\{1}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline2 /^\*\{2}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline3 /^\*\{3}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline4 /^\*\{4}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline5 /^\*\{5}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline6 /^\*\{6}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline7 /^\*\{7}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline8 /^\*\{8}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline9 /^\*\{9}[^*].*$/   contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadlineN /^\*\{10,}[^*].*$/ contained contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+" syntax cluster orgSection contains=orgSection1,orgSection2,orgSection3,orgSection4,orgSection5,orgSection6,orgSection7,orgSection8,orgSection9
+" syntax region orgSection1 start=/^\*\{1}[^*]/ end=/^\%(\*\{2}\)\@!\ze\*\+/ fold transparent contains=@orgHeadline,@orgSection
+" syntax region orgSection2 start=/^\*\{2}[^*]/ end=/^\%(\*\{3}\)\@!\ze\*\+/ fold transparent contains=@orgHeadline
+" syntax region orgSection3 start=/^\*\{3}[^*]/ end=/^\ze\%(\*\{4}\)\@!\*\+/ fold transparent contains=@orgHeadline
+" syntax region orgSection4 start=/^\*\{4}[^*]/ end=/^\ze\%(\*\{5}\)\@!\*\+/ fold transparent contains=@orgHeadline
+" syntax region orgSection5 start=/^\*\{5}[^*]/ end=/^\ze\%(\*\{6}\)\@!\*\+/ fold transparent contains=@orgHeadline
+" syntax region orgSection6 start=/^\*\{6}[^*]/ end=/^\ze\%(\*\{7}\)\@!\*\+/ fold transparent contains=@orgHeadline
+" syntax region orgSection7 start=/^\*\{7}[^*]/ end=/^\ze\%(\*\{8}\)\@!\*\+/ fold transparent contains=@orgHeadline
+" syntax region orgSection8 start=/^\*\{8}[^*]/ end=/^\ze\%(\*\{9}\)\@!\*\+/ fold transparent contains=@orgHeadline
+" syntax region orgSection9 start=/^\*\{9}[^*]/ end=/^\ze\%(\*\{10,}\)\@!\*\+/ fold transparent contains=@orgHeadline
+
+syntax match orgHeadline1 /^\*\{1}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadline2 /^\*\{2}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadline3 /^\*\{3}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadline4 /^\*\{4}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadline5 /^\*\{5}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadline6 /^\*\{6}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadline7 /^\*\{7}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadline8 /^\*\{8}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadline9 /^\*\{9}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syntax match orgHeadlineN /^\*\{10,}[^*].*$/ contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
 
 syntax match orgHeadlineStars contained /^\*\+/ skipwhite
       \ contains=orgHeadlineInnerStar,orgHeadlineLastStar
@@ -66,6 +78,8 @@ highlight link orgHeadlinePriority Error
 highlight link orgHeadlineTags SpecialComment
 " highlight link orgHeadlineText Normal
 
+" TODO color different levels of headlines with matchadd?
+
 " NOTE: empty lines belong to the largest element ending before them
 
 syntax cluster orgPlanning contains=orgPlanDeadline,orgPlanScheduled,orgPlanClosed,orgPlanTime
@@ -100,12 +114,9 @@ hi link orgListLeader Number
 hi link orgListCheck Todo
 hi link orgListTag SpecialComment
 
-syntax region orgPropertyDrawer contained keepend matchgroup=orgPropertyDrawerEnds
-      \ start=/^:PROPERTIES:$/ end=/^:END:$/ contains=orgNodeProperty,orgNodeMultiProperty fold
-syntax region orgNodeProperty contained keepend matchgroup=orgPropertyName
-      \ start=/^:\S\+[^+]:/ end=/$/ oneline
-syntax region orgNodeMultiProperty contained keepend matchgroup=orgPropertyName
-      \ start=/^:\S\++:/ end=/$/ oneline
+syntax region orgPropertyDrawer contained keepend matchgroup=orgPropertyDrawerEnds start=/^:PROPERTIES:$/ end=/^:END:$/ contains=orgNodeProperty,orgNodeMultiProperty fold
+syntax region orgNodeProperty contained keepend matchgroup=orgPropertyName start=/^:\S\+[^+]:/ end=/$/ oneline
+syntax region orgNodeMultiProperty contained keepend matchgroup=orgPropertyName start=/^:\S\++:/ end=/$/ oneline
 
 hi link orgNodeProperty SpecialComment
 hi link orgNodeMultiProperty SpecialComment
