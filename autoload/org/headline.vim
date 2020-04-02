@@ -112,7 +112,7 @@ function! org#headline#open(direction) abort " {{{1
     let next = next == 0 ? prevnonblank(line('$')) : next - 1
     " If the headlines are neighbors, don't add empty spaces.
   endif
-  call org#headline#add(next + 1, level, ' ')
+  call org#headline#add(next, level, ' ')
   call cursor(next + 1, level + 2)
   startinsert!
 
