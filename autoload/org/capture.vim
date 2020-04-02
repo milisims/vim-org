@@ -17,19 +17,19 @@
 " https://orgmode.org/manual/Template-elements.html#Template-elements
 
 " if !exists('g:org#capture#defaults')
-  let g:org#capture#defaults = {
-        \ 'item': '`input("List item> ")`',
-        \ 'checkitem': '`input("List item> ")`',
-        \ 'plain': '`input("Text> ")`'
-        \ }
+let g:org#capture#defaults = {
+      \ 'item': '`input("List item> ")`',
+      \ 'checkitem': '`input("List item> ")`',
+      \ 'plain': '`input("Text> ")`'
+      \ }
 
-  let g:org#capture#defaults.entry = [
-        \ '* `input("Description> ")`',
-        \ ':PROPERTIES:',
-        \ ':captured-at: `org#timestamp#date2text(localtime())`',
-        \ ':captured-in: `fnamemodify(expand("%"), ":p:~")`',
-        \ ':END:',
-        \ ]
+let g:org#capture#defaults.entry = [
+      \ '* `input("Description> ")`',
+      \ ':PROPERTIES:',
+      \ ':captured-at: `org#timestamp#date2text(localtime())`',
+      \ ':captured-in: `fnamemodify(expand("%"), ":p:~")`',
+      \ ':END:',
+      \ ]
 " endif
 
 let s:default_opts = {
