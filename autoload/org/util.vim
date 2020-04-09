@@ -79,10 +79,10 @@ function! org#util#get(name, default, ...) abort " {{{1
   if b == g || b == a:default
     return g
   endif
-  if append && type(g) == 3
+  if append && type(g) == v:t_list
      call extend(g, b)
      return g
-  elseif append && type(g) == 4
+  elseif append && type(g) == v:t_dict
     return extend(g, b)
   endif
 

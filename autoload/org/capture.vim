@@ -61,7 +61,7 @@ function! org#capture#do(capture) abort " {{{1
 
   let layout = winlayout()
   " Check if it's open already?
-  execute opts.editcmd target.FILE
+  execute opts.editcmd target.filename
 
   if a:capture.type == 'entry'
     let range = s:add_entry(target, text, opts.prepend)
@@ -94,16 +94,16 @@ function! org#capture#do(capture) abort " {{{1
 endfunction
 
 function! s:add_entry(target, text, prepend) abort " {{{2
-  let lnum = org#section#range(a:target.LNUM)[1]
+  let lnum = org#section#range(a:target.lnum)[1]
   let lnum = prevnonblank(lnum)  " TODO + 1, check for edge
-  let text = type(a:text) == 1 ? [a:text] : a:text
+  let text = type(a:text) == v:t_string ? [a:text] : a:text
   call append(lnum, text)
-  if has_key(a:target, 'LEVEL')
+  if has_key(a:target, 'level')
     let range = (lnum + 1 + empty(getline(lnum))). ',' . (lnum + len(text))
     " FIXME org#shift should work on this.
     let cursor = getcurpos()[1:]
     call cursor(lnum + 1, 1)
-    call org#headline#promote(a:target.LEVEL)
+    call org#headline#promote(a:target.level)
     call cursor(cursor)
   endif
   return [lnum + 1, lnum + len(text)]
@@ -111,7 +111,7 @@ endfunction
 
 function! s:add_item(target, text, prepend, ...) abort " {{{2
   let checkbox = get(a:, 1, 0)
-  let range = org#section#range(a:target.LNUM)
+  let range = org#section#range(a:target.lnum)
   let lnum = org#list#find(range[1], 'bW')
   let lnum = lnum < range[0] ? range[1] : lnum
   call org#list#item_add(lnum, a:text, checkbox)
@@ -119,7 +119,7 @@ function! s:add_item(target, text, prepend, ...) abort " {{{2
 endfunction
 
 function! s:add_plaintext(target, text, prepend, ...) abort " {{{2
-  let lnum = org#section#range(a:target.LNUM)[1]
+  let lnum = org#section#range(a:target.lnum)[1]
   let lnum = prevnonblank(lnum) + 1
   call append(lnum, a:text)
   return [lnum, lnum + len(a:text) - 1]
@@ -143,14 +143,14 @@ function! org#capture#get_target(template) abort " {{{1
   " returns: string or dict. String if just a filename, dict of org#headline#get if specified.
   if !has_key(a:template, 'target')
     return org#headline#fromtarget(g:org#inbox)
-  elseif type(a:template.target) == 1      " string
+  elseif type(a:template.target) == v:t_string
     return org#headline#fromtarget(a:template.target, 1)
-  elseif type(a:template.target) == 2  " funcref
+  elseif type(a:template.target) == v:t_func
     return  a:template.target()
-  elseif type(a:template.target) == 3  " list
+  elseif type(a:template.target) == v:t_list
     return a:template.target
-  elseif type(a:template.target) == 4  " dict
-    let bufn = resolve(fnamemodify(a:template.target.file, ':p'))
+  elseif type(a:template.target) == v:t_dict
+    let bufn = resolve(fnamemodify(a:template.target.filename, ':p'))
     if has_key(a:template.target, 'regex')
     elseif has_key(a:template.target, 'target')
     endif
@@ -161,7 +161,7 @@ endfunction
 
 function! org#capture#template2text(template) abort " {{{1
   " TODO add dictionary template possible for 'entry' type
-  let template = type(a:template) == 3 ? join(a:template, "\n") : a:template
+  let template = type(a:template) == v:t_list ? join(a:template, "\n") : a:template
   let parts = split(template, '`', 1)
   if len(parts) == 1
     return template
@@ -176,7 +176,7 @@ endfunction
 
 function! org#capture#template2snippet(template) abort " {{{1
   " TODO add dictionary template possible for 'entry' type
-  let template = type(a:template) == 3 ? join(a:template, "\n") : a:template
+  let template = type(a:template) == v:t_list ? join(a:template, "\n") : a:template
   let parts = split(template, '`', 1)
   if len(parts) == 1
     return template
@@ -195,7 +195,7 @@ endfunction
 
 function! org#capture#window(templates) abort " {{{1
   let templates = map(copy(a:templates), {_, t -> [t.key, t.description]})
-  " let templates = map(templates, {_, t -> [t[0], type(t[1]) == 2 ? t[1]() : t[1]]})
+  " let templates = map(templates, {_, t -> [t[0], type(t[1]) == v:t_func ? t[1]() : t[1]]})
   let fulltext = s:capture_text(templates)
   let winid = has('nvim') ? s:nvimwin(fulltext) : s:vimwin(fulltext)
   let selection = ''

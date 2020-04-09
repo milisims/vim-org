@@ -1,61 +1,21 @@
-" 346:(defconst org-list-end-re "^[ \t]*\n[ \t]*\n"
-" 347-  "Regex matching the end of a plain list.")
-" 348-
-" 349:(defconst org-list-full-item-re
-" 350-  (concat "^[ \t]*\\(\\(?:[-+*]\\|\\(?:[0-9]+\\|[A-Za-z]\\)[.)]\\)\\(?:[ \t]+\\|$\\)\\)"
-" 351-      "\\(?:\\[@\\(?:start:\\)?\\([0-9]+\\|[A-Za-z]\\)\\][ \t]*\\)?"
-" 352-      "\\(?:\\(\\[[ X-]\\]\\)\\(?:[ \t]+\\|$\\)\\)?"
-" 353-      "\\(?:\\(.*\\)[ \t]+::\\(?:[ \t]+\\|$\\)\\)?")
-" 354-  "Matches a list item and puts everything into groups:
-" 355-group 1: bullet
-" 356-group 2: counter
-" 357-group 3: checkbox
-" 358-group 4: description tag")
-
-" group 1: bullet          "\v^\s*(([-+*]|(\d+|\a)[.)])(\s+|$))"
-" group 2: counter-start   "\v(\[@(:start:)?(\d+|\a)\]\s*)?"
-" group 3: checkbox        "\v((\[[ Xx-]\])(\s+|$))?"
-" group 4: description-tag "\v((.*)\s+::(\s+|$))?"
-" list end:                "^\s*\n\s*\n"
-
-" Rules for regex: only group the components we care about potentially returning.
-" Almost never whitespace.
-let g:org#list#regex#ordered_bullet   = '\v^\s*(\d+|\a)[.)]%(\s+|$)'
-let g:org#list#regex#unordered_bullet = '\v^\s*([-+]|\s\*)%(\s+|$)'
-let g:org#list#regex#bullet           = '\v^\s*(%([-+*]|%(\d+|\a)[.)]))%(\s+|$)'
-let g:org#list#regex#counter_start    = '\v(\[\@%(:start:)?(\d+|\a)\]\s*)'
-let g:org#list#regex#checkbox         = '\v(\[[ Xx-]\]%(\s+|$))'
-let g:org#list#regex#checkedbox       = '\v(\[[Xx]\]%(\s+|$))'
-let g:org#list#regex#uncheckedbox     = '\v(\[[ ]\]%(\s+|$))'
-let g:org#list#regex#tag              = '\v(%(.*)\s+::%(\s+|$))'
-let g:org#list#regex#end              = '^\s*\n\s*\n'
-
-" RENAME:
-let g:org#list#regex#upto#checkbox = g:org#list#regex#bullet . g:org#list#regex#counter_start[2:]  . '?' . g:org#list#regex#checkbox[2:]
-let g:org#list#regex#upto#checkedbox = g:org#list#regex#bullet . g:org#list#regex#counter_start[2:] . '?' . g:org#list#regex#checkedbox[2:]
-
-let g:org#list#regex#decompose = [org#list#regex#bullet, org#list#regex#counter_start[2:],
-      \ org#list#regex#checkbox[2:], org#list#regex#tag[2:], org#list#regex#end]
-" let org#list#regex#full = join(org#list#regex#decompose, '')
-
 function! org#list#has_bullet(text) abort " {{{1
-  return a:text =~# g:org#list#regex#bullet
+  return a:text =~# g:org#regex#list#bullet
 endfunction
 
 function! org#list#has_ordered_bullet(text) abort " {{{1
-  return a:text =~# g:org#list#regex#ordered_bullet
+  return a:text =~# g:org#regex#list#ordered_bullet
 endfunction
 
 function! org#list#has_unordered_bullet(text) abort " {{{1
-  return a:text =~# g:org#list#regex#unordered_bullet
+  return a:text =~# g:org#regex#list#unordered_bullet
 endfunction
 
 function! org#list#has_checkbox(text) abort " {{{1
-  return a:text =~# g:org#list#regex#upto#checkbox
+  return a:text =~# g:org#regex#list#upto#checkbox
 endfunction
 
 function! org#list#has_check(text) abort " {{{1
-  return a:text =~? g:org#list#regex#upto#checkedbox
+  return a:text =~? g:org#regex#list#upto#checkedbox
 endfunction
 
 function! org#list#checkline(lnum) abort " {{{1
@@ -217,7 +177,7 @@ endfunction
 
 function! org#list#find(lnum, ...) abort " {{{1
   let flags = get(a:, 1, '')
-  return org#util#search(a:lnum, g:org#list#regex#bullet, flags)
+  return org#util#search(a:lnum, g:org#regex#list#bullet, flags)
 endfunction
 
 function! org#list#find_same(lnum, ...) abort " {{{1
@@ -251,7 +211,7 @@ function! org#list#item_add(lnum, text, ...) abort " {{{1
   else
     let [end, whitespace, bullet] = [a:lnum, '  ', '-']  " TODO getme from options
   endif
-  if type(a:text) == 3  " list
+  if type(a:text) == v:t_list  " list
     let bws = whitespace . substitute(bullet, '.', ' ', 'g') . ' '
     let bullet = bullet . (checkbox ? ' [ ] ' : ' ')
     let text = [whitespace . bullet . a:text[0]] + map(a:text[1:], 'bws . v:val')

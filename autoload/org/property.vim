@@ -1,11 +1,11 @@
 
 function! org#property#add(lnum, props, ...) abort " {{{1
-  let properties = type(a:props) == 4 ? a:props : {a:props : get(a:, 1, 0)}
-  if type(a:props) == 4
+  let properties = type(a:props) == v:t_dict ? a:props : {a:props : get(a:, 1, 0)}
+  if type(a:props) == v:t_dict
     let properties = items(a:props)
     let position = get(a:, 1, -1)
-  elseif type(a:props) == 3
-    if type(a:props[0]) != 3
+  elseif type(a:props) == v:t_list
+    if type(a:props[0]) != v:t_list
       let names = a:1  " If providing a list of names, must provide a list of values
       let properties = map(copy(a:props), {ix, v -> [v, name[ix]]})
       let position = get(a:, 2, -1)
@@ -62,9 +62,9 @@ function! org#property#all(lnum, ...) abort " {{{1
   let properties = {}
   for lnum in range(start, end)
     let [name, val] = org#property#parse(getline(lnum))
-    if type(val) == 3
+    if type(val) == v:t_list
       let old = get(properties, name, [])  " previous might not be a list
-      let val = (type(old) == 3 ? old : [old]) + val
+      let val = (type(old) == v:t_list ? old : [old]) + val
     endif
     let properties[name] = val
   endfor

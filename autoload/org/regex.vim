@@ -14,7 +14,7 @@ let g:org#regex#property = '\v^:([[:alnum:]_-]+)(\+)?:%(\s+|$)(.*)'
 " <4321-12-01 dow 12:34-13:24>
 " <1234-05-21 dow>--<1234-05-22 dow>
 " <1234-05-21 dow 12:34>--<1234-05-22 dow 13:34>
-" Timestamp {{{
+" Timestamp {{{1
 let g:org#regex#timestamp#date = '\v%((\d{4})-(\d{2})-(\d{2})(\s+[^]+0-9> -]+)?\s*)'
 let g:org#regex#timestamp#date0 = '\v%(\d{4}-\d{2}-\d{2}%(\s+[^]+0-9> -]+)?\s*)'
 let g:org#regex#timestamp#date1 = '\v%((\d{4}-\d{2}-\d{2}%(\s+[^]+0-9> -]+)?)\s*)'
@@ -50,7 +50,50 @@ let g:org#regex#timestamp#daterange2 = '\v'.o. '(' . org#regex#timestamp#full0 .
 
 unlet o c
 
-" }}}
+" List {{{1
+
+" 346:(defconst org-list-end-re "^[ \t]*\n[ \t]*\n"
+" 347-  "Regex matching the end of a plain list.")
+" 348-
+" 349:(defconst org-list-full-item-re
+" 350-  (concat "^[ \t]*\\(\\(?:[-+*]\\|\\(?:[0-9]+\\|[A-Za-z]\\)[.)]\\)\\(?:[ \t]+\\|$\\)\\)"
+" 351-      "\\(?:\\[@\\(?:start:\\)?\\([0-9]+\\|[A-Za-z]\\)\\][ \t]*\\)?"
+" 352-      "\\(?:\\(\\[[ X-]\\]\\)\\(?:[ \t]+\\|$\\)\\)?"
+" 353-      "\\(?:\\(.*\\)[ \t]+::\\(?:[ \t]+\\|$\\)\\)?")
+" 354-  "Matches a list item and puts everything into groups:
+" 355-group 1: bullet
+" 356-group 2: counter
+" 357-group 3: checkbox
+" 358-group 4: description tag")
+
+" group 1: bullet          "\v^\s*(([-+*]|(\d+|\a)[.)])(\s+|$))"
+" group 2: counter-start   "\v(\[@(:start:)?(\d+|\a)\]\s*)?"
+" group 3: checkbox        "\v((\[[ Xx-]\])(\s+|$))?"
+" group 4: description-tag "\v((.*)\s+::(\s+|$))?"
+" list end:                "^\s*\n\s*\n"
+
+" Rules for regex: only group the components we care about potentially returning.
+" Almost never whitespace.
+let g:org#regex#list#ordered_bullet   = '\v^\s*(\d+|\a)[.)]%(\s+|$)'
+let g:org#regex#list#unordered_bullet = '\v^\s*([-+]|\s\*)%(\s+|$)'
+let g:org#regex#list#bullet           = '\v^\s*(%([-+*]|%(\d+|\a)[.)]))%(\s+|$)'
+let g:org#regex#list#counter_start    = '\v(\[\@%(:start:)?(\d+|\a)\]\s*)'
+let g:org#regex#list#checkbox         = '\v(\[[ Xx-]\]%(\s+|$))'
+let g:org#regex#list#checkedbox       = '\v(\[[Xx]\]%(\s+|$))'
+let g:org#regex#list#uncheckedbox     = '\v(\[[ ]\]%(\s+|$))'
+let g:org#regex#list#tag              = '\v(%(.*)\s+::%(\s+|$))'
+let g:org#regex#list#end              = '^\s*\n\s*\n'
+
+" RENAME:
+
+let g:org#regex#list#upto#checkbox = g:org#regex#list#bullet . g:org#regex#list#counter_start[2:]  . '?' . g:org#regex#list#checkbox[2:]
+let g:org#regex#list#upto#checkedbox = g:org#regex#list#bullet . g:org#regex#list#counter_start[2:] . '?' . g:org#regex#list#checkedbox[2:]
+
+let g:org#regex#list#decompose = [org#regex#list#bullet, org#regex#list#counter_start[2:],
+      \ org#regex#list#checkbox[2:], org#regex#list#tag[2:], org#regex#list#end]
+" let org#regex#list#full = join(org#regex#list#decompose, '')
+
+" others {{{1
 
 function! org#regex#headline(...) abort
   let keywords = join(get(a:, 1, org#keyword#all('all')), '|')

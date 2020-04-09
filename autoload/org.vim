@@ -96,10 +96,10 @@ function! org#refile(lnum, ...) abort " {{{1
 
   try
     let target = org#headline#maketarget(destination)
-    execute 'split' target.FILE
+    execute 'split' target.filename
     let winnr = winnr()
-    call append(target.LNUM, text)  " FIXME will not preserve timestamps/properties
-    let shift = target.LEVEL - refile_level
+    call append(target.lnum, text)  " FIXME will not preserve timestamps/properties
+    let shift = target.level - refile_level
     for i in range(abs(shift))
       execute lnum . ',' lnum + (end - st) 'call org#shift(' . shift > 0 ? 1 : -1 . ', "v")'
     endfor
@@ -140,7 +140,7 @@ endfunction
 
 function! org#late() abort " {{{1
   let agenda = filter(org#agenda#list(), {k, hl -> org#timestamp#islate(hl)})
-  call sort(agenda, org#util#seqsortfunc(['FILE', 'LNUM']))
+  call sort(agenda, org#util#seqsortfunc(['file', 'lnum']))
   call map(agenda, {ix, hl -> org#agenda#toqf(ix, hl)})
   call setqflist(agenda)
   copen
@@ -149,9 +149,9 @@ endfunction
 function! org#process_inbox() abort " {{{1
   let agenda = org#agenda#list()
   let inbox = resolve(fnamemodify(g:org#inbox, ':p'))
-  call filter(agenda, {_, hl -> hl.FILE == inbox})
-  call filter(agenda, {_, hl -> hl.LEVEL == 1})
-  call sort(agenda, {a, b -> a.LNUM - b.LNUM})
+  call filter(agenda, {_, hl -> hl.filename == inbox})
+  call filter(agenda, {_, hl -> hl.level == 1})
+  call sort(agenda, {a, b -> a.lnum - b.lnum})
   " call map(agenda, {ix, hl -> org#agenda#toqf(ix, hl)})
   " call setqflist(agenda)
 
@@ -172,11 +172,11 @@ function! org#capture() range abort " {{{1
     echoerr 'No capture templates see :h g:org#capture#templates'
     return
   endif
-  if type(g:org#capture#templates) == 4
+  if type(g:org#capture#templates) == v:t_dict
     let order = copy(get(g:, 'org#capture#order', sort(keys(g:org#capture#templates))))
     let order = filter(order, 'has_key(g:org#capture#templates, v:val)')
     let templates = map(order, {_, k -> extend(g:org#capture#templates[k], {'key': k})})
-  elseif type(g:org#capture#templates) == 3
+  elseif type(g:org#capture#templates) == v:t_list
     let templates = copy(g:org#capture#templates)
   else
     throw 'Org: g:org#capture#templates must be a list or dictionary.'

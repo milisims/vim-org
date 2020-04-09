@@ -5,14 +5,14 @@ function! org#headline#parse(text, ...) abort " {{{1
   let keywords = get(a:, 1, org#keyword#all())
   let todo = keywords['todo']
   let done = keywords['done']
-  if type(keywords) == 4
+  if type(keywords) == v:t_dict
     let keywords = keywords.todo + keywords.done
   endif
   let [n, k, p, t, g] = matchlist(a:text, org#regex#headline(keywords))[1:5]
   let p = matchstr(p, '\a')
   let d = index(done, k) >= 0 ? k : ''
   let k = index(todo, k) >= 0 ? '' : k
-  return {'LEVEL': len(n), 'TODO': k, 'DONE': d, 'PRIORITY': p, 'ITEM': t, 'TAGS': split(g, ':')}
+  return {'level': len(n), 'todo': k, 'done': d, 'priority': p, 'item': t, 'text': a:text, 'tags': split(g, ':')}
 endfunction
 
 function! org#headline#get(lnum, ...) abort " {{{1
@@ -23,12 +23,13 @@ function! org#headline#get(lnum, ...) abort " {{{1
   let keywords = get(a:, 1, org#keyword#all())
   let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
   let info = org#headline#parse(getline(lnum), keywords)
-  let info.FILE = resolve(fnamemodify(bufname(), ':p'))
-  let info.BUFNR = bufnr()
-  let info.LNUM = lnum
-  let info.PARENTLNUM = info.LEVEL > 1 ? org#headline#find(info.LNUM, info.LEVEL - 1, 'nbW') : 0
-  call extend(info, org#timestamp#get(info.LNUM))
-  call extend(info, org#property#all(info.LNUM), 'keep')
+  " :h tag-function: name, filename, cmd, kind, user_data?
+  let info.filename = resolve(fnamemodify(bufname(), ':p'))
+  let info.bufnr = bufnr()
+  let info.lnum = lnum
+  let info.kind = 'h'
+  let info.plan = org#timestamp#get(lnum)
+  let info.properties = org#property#all(lnum)
   return info
 endfunction
 
@@ -63,6 +64,20 @@ function! org#headline#find(lnum, ...) abort " {{{1
   let flags = get(a:, 2, '')
   let pattern = level > 0 ? ('^\*\{1,' . level . '}\(\s\+\|$\)') : '^\*\+\s*'
   return org#util#search(lnum, pattern, flags)
+endfunction
+
+function! org#headline#subtree(lnum, ...) abort " {{{1
+  let keywords = get(a:, 1, org#keyword#get()) " dict vs list?
+  let headline = org#headline#get(a:lnum, keywords)
+
+  let [lnum, end] = org#section#range(headline.lnum)
+  let lnum = org#headline#find(lnum, 0, 'Wx')
+  let subtree = []
+  while lnum > 0 && lnum <= end
+    call add(subtree, org#headline#subtree(lnum, keywords))
+    let lnum = org#headline#find(lnum, 0, 'Wx')
+  endwhile
+  return [headline, subtree]
 endfunction
 
 function! org#headline#at(lnum) abort " {{{1
@@ -153,28 +168,35 @@ function! org#headline#keyword(text) abort " {{{1
   return matchstr(a:text, '^\*\+\s\+\zs\(' . join(org#keyword#all('all'), '\|') . '\)')
 endfunction
 
-function! org#headline#astarget(lnum) abort " {{{1
-  let hl = org#headline#get(a:lnum)
+function! org#headline#astarget(expr) abort " {{{1
+  if type(expr) == v:t_number || type(expr) == v:t_string
+    let lnum = org#headline#find(a:expr)
+  elseif type(expr) == v:t_dict
+    let lnum = a:expr.lnum
+  else
+    throw 'org#headline#astarget expr must be str, nr, or dict (from org#headilne#get)'
+  endif
   let target = []
-  while !empty(hl)
-    call insert(target, hl.ITEM)
-    let hl = org#headline#get(hl.PARENTLNUM)
+  while lnum > 0
+    let hl = org#headline#get(hl)
+    call insert(target, hl.item)
+    let lnum = hl.level == 1 ? 0 : org#headline#find(hl.lnum, hl.level - 1, 'nWbx')
   endwhile
-  return fnamemodify(expand('%'), ':t') + join(target, '/')
+  return fnamemodify(expand('%'), ':t') . '/' . hl.item . (empty(target) ? '' : ('/' . join(target, '/')))
 endfunction
 
 function! org#headline#fromtarget(target, ...) abort " {{{1
   " file.org/hl1/headline 2/hl3/he.*line4/headline6
   " optional arg = true if make missing target headlines. Will use text literally.
   let make = get(a:, 1, 0)
-  if type(a:target) == 1
+  if type(a:target) == v:t_string
     let fspl = split(a:target, '\.org\zs/')
     if len(fspl) == 1
-      return {'FILE': a:target, 'LNUM': 0, 'BUFNR': bufnr()}
+      return {'file': a:target, 'lnum': 0, 'bufnr': bufnr()}
     endif
     let [fname, headlines] = fspl
     let headlines = split(headlines, '/')
-  elseif type(a:target) == 3
+  elseif type(a:target) == v:t_list
     let [fname; headlines] = a:target
   else
     throw "Org: target must be str or list"
@@ -192,7 +214,7 @@ function! org#headline#fromtarget(target, ...) abort " {{{1
     for ix in range(len(headlines))
       let lnum = org#util#search(range[0], prefix . headlines[ix] . suffix, '', range[1])
       if lnum == 0
-        let level = ix == 0 ? 1 : max([org#headline#get(range[0]).LEVEL + 1, ix + 1])
+        let level = ix == 0 ? 1 : max([org#headline#get(range[0]).level + 1, ix + 1])
         call org#headline#add(range[1], level, headlines[ix])
         let lnum = range[1] + 1
       endif

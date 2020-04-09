@@ -1,5 +1,6 @@
 " {{{ Variables
 
+runtime autoload/org/regex.vim
 let org#timestamp#scheduled#time = get(g:, 'org#timestamp#scheduled#time', 3)
 let org#timestamp#deadline#time = get(g:, 'org#timestamp#deadline#time', 3)
 let org#dir = '~/org'

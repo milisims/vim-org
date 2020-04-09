@@ -78,7 +78,7 @@ function! org#timestamp#date2text(datetime, ...) abort " {{{1
   let timefmt = '%Y-%m-%d' . (use_day ? ' %a' : '')
 
   " example ftime: <2019-09-30 Mon 1:00>
-  if type(a:datetime) != 4  " is not a dict
+  if type(a:datetime) != v:t_dict  " is not a dict
     let active = !(opts =~# 'A')
     let [o, c] = ['[<'[active], ']>'[active]]
     if use_time > 0 || (use_time < 0 && strftime('%H:%M', a:datetime) != '00:00')
@@ -327,21 +327,21 @@ endfunction
 function! org#timestamp#tdiff(t1, t2) abort " {{{1
   " Difference of two timestamps or floats
   " 0 if times overlap, difference in closest start/end otherwise
-  if type(a:t1) == 4 && type(a:t2) == 4 " check for dict
+  if type(a:t1) == v:t_dict && type(a:t2) == v:t_dict
     if a:t1.end < a:t2.start
       return a:t1.end - a:t2.start
     elseif a:t1.start > a:t2.end
       return a:t1.start - a:t2.end
     endif
     return 0
-  elseif type(a:t1) == 4
+  elseif type(a:t1) == v:t_dict
     if a:t1.end < a:t2
       return a:t1.end - a:t2
     elseif a:t1.start > a:t2
       return a:t1.start - a:t2
     endif
     return 0
-  elseif type(a:t2) == 4
+  elseif type(a:t2) == v:t_dict
     if a:t1 < a:t2.start
       return a:t1 - a:t2.start
     elseif a:t1 > a:t2.end
