@@ -1,1 +1,1 @@
-autocmd BufNewFile,BufRead *.org setfiletype org
+autocmd BufRead,BufNewFile *.org setfiletype org

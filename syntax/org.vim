@@ -84,23 +84,30 @@ highlight link orgHeadlineTags SpecialComment
 
 syntax cluster orgPlanning contains=orgPlanDeadline,orgPlanScheduled,orgPlanClosed,orgPlanTime
 
-syntax match orgPlanDeadline contained /^\s*DEADLINE:.*/  contains=orgTimestamp nextgroup=orgPropertyDrawer skipnl
-syntax match orgPlanScheduled contained /^\s*SCHEDULED:.*/ contains=orgTimestamp nextgroup=orgPropertyDrawer skipnl
-syntax match orgPlanClosed contained /^\s*CLOSED:.*/    contains=orgTimestamp nextgroup=orgPropertyDrawer skipnl
-syntax match orgPlanTime contained /^\s*<.*/    contains=orgTimestamp nextgroup=orgPropertyDrawer skipnl
+syntax match orgPlanDeadline  contained /\s*\zsDEADLINE:/            nextgroup=orgPlanTime skipwhite
+syntax match orgPlanScheduled contained /\s*\zsSCHEDULED:/           nextgroup=orgPlanTime skipwhite
+syntax match orgPlanClosed    contained /\s*\zsCLOSED:/              nextgroup=orgPlanTime skipwhite
+syntax match orgPlanTime      contained /\s*\zs<.*>\(--<.*>\)\?/     nextgroup=@orgPlanning,orgPropertyDrawer skipwhite skipnl contains=@orgTimestampElements
+syntax match orgPlanTime      contained /\s*\zs\[.*\]\(--\[.*\]\)\?/ nextgroup=@orgPlanning,orgPropertyDrawer skipwhite skipnl contains=@orgTimestampElements
 
-highlight link orgPlanDeadline Comment
+highlight link orgPlanDeadline  Comment
 highlight link orgPlanScheduled Comment
-highlight link orgPlanClosed Comment
-highlight link orgPlanTime Comment
+highlight link orgPlanClosed    Comment
+highlight link orgPlanTime      Comment
+highlight link orgPlanning      Comment
 
-" syntax region orgTimestamp oneline keepend transparent start='<'  end='>'  contains=orgDate,orgTime,orgRepeater
-" syntax region orgTimestamp oneline keepend transparent start='\[' end=']'  contains=orgDate,orgTime,orgRepeater
-syntax match  orgDate      contained  /\d\{4}-\d\d-\d\d\s\a\+/    transparent
-syntax match  orgTime      contained  /\d\{1,2}:\d\d/                 transparent
-syntax match  orgRepeater  contained  /\v([+-]{1,2}|\.+)\d+[hdwmy]/ transparent
+syntax cluster orgTimestampElements contains=orgDate,orgTime,orgTimeRepeat,orgTimeDelay
 
-highlight link orgPlanning Comment
+syntax match orgDate       contained /\d\{4}-\d\d-\d\d\s\a\+/
+syntax match orgTime       contained /\d\{1,2}:\d\d/
+syntax match orgTimeRepeat contained /\v[.+]?\+\d+\c[hdwmy]>\s*/
+syntax match orgTimeDelay  contained /\v([+-]{1,2}|\.+)\d+[hdwmy]/
+
+highlight link orgDate              Comment
+highlight link orgTime              Comment
+highlight link orgTimeRepeat        Comment
+highlight link orgTimeDelay         Comment
+highlight link orgTimestampElements Comment
 
 syntax region orgListItem matchgroup=orgListLeader
       \ start=/^\z(\s*\)\zs[-+]/ start=/^\z(\s*\)\zs\(\d\+\|\a\)[.)]/ start=/^\z(\s\+\)\zs\*/
@@ -111,17 +118,17 @@ syntax match orgListTag /\(\w\|\s\)*::/ contained
 " FIXME: should be 'any character' for orglist tag -- If we just use .*, it clobbers the check
 
 hi link orgListLeader Number
-hi link orgListCheck Todo
-hi link orgListTag SpecialComment
+hi link orgListCheck  Todo
+hi link orgListTag    SpecialComment
 
-syntax region orgPropertyDrawer contained keepend matchgroup=orgPropertyDrawerEnds start=/^:PROPERTIES:$/ end=/^:END:$/ contains=orgNodeProperty,orgNodeMultiProperty fold
-syntax region orgNodeProperty contained keepend matchgroup=orgPropertyName start=/^:\S\+[^+]:/ end=/$/ oneline
-syntax region orgNodeMultiProperty contained keepend matchgroup=orgPropertyName start=/^:\S\++:/ end=/$/ oneline
+syntax region orgPropertyDrawer contained keepend matchgroup=orgPropertyDrawerEnds start=/^\s*:PROPERTIES:$/ end=/^\s*:END:$/ contains=orgNodeProperty,orgNodeMultiProperty fold
+syntax region orgNodeProperty contained keepend matchgroup=orgPropertyName start=/^\s*:\S\+[^+]:/ end=/$/ oneline
+syntax region orgNodeMultiProperty contained keepend matchgroup=orgPropertyName start=/^\s*:\S\++:/ end=/$/ oneline
 
-hi link orgNodeProperty SpecialComment
-hi link orgNodeMultiProperty SpecialComment
+hi link orgNodeProperty       SpecialComment
+hi link orgNodeMultiProperty  SpecialComment
 hi link orgPropertyDrawerEnds Comment
-hi link orgPropertyName Identifier
+hi link orgPropertyName       Identifier
 
 syntax sync match orgSyncPropertyDrawer grouphere orgPropertyDrawer /\v^(:PROPERTIES:$)@=/
 " syntax sync match orgSync grouphere orgSection /\v^%(\*+)@=/
@@ -232,15 +239,15 @@ highlight link orgComment Comment
 
 "" }}}
 
-"syntax region orgBold      start=/\(\s\|^\)\zs\*[^ \t*]/ end=/[^ \t*]\*\ze\(\s\|$\)/ containedin=ALL contains=NONE
-"syntax region orgItalic    start=/\(\s\|^\)\zs\/[^ \t/]/ end=/[^ \t/]\/\ze\(\s\|$\)/ containedin=ALL contains=NONE
-"syntax region orgUnderline start=/\(\s\|^\)\zs_[^ \t_]/  end=/[^ \t_]_\ze\(\s\|$\)/  containedin=ALL contains=NONE
-"syntax region orgVerbatim  start=/\(\s\|^\)\zs=[^ \t=]/  end=/[^ \t=]=\ze\(\s\|$\)/  contains=NONE
+syntax region orgBold      start=/\(\s\|^\)\zs\*[^ \t*]/ end=/[^ \t*]\*\ze\(\s\|$\)/ containedin=ALL contains=NONE
+syntax region orgItalic    start=/\(\s\|^\)\zs\/[^ \t/]/ end=/[^ \t/]\/\ze\(\s\|$\)/ containedin=ALL contains=NONE
+syntax region orgUnderline start=/\(\s\|^\)\zs_[^ \t_]/  end=/[^ \t_]_\ze\(\s\|$\)/  containedin=ALL contains=NONE
+syntax region orgVerbatim  start=/\(\s\|^\)\zs=[^ \t=]/  end=/[^ \t=]=\ze\(\s\|$\)/  contains=NONE
 
-"highlight orgBold      cterm=bold      gui=bold
-"highlight orgItalic    cterm=italic    gui=italic
-"highlight orgUnderline cterm=underline gui=underline
-"highlight link orgVerbatim Normal
+highlight orgBold      cterm=bold      gui=bold
+highlight orgItalic    cterm=italic    gui=italic
+highlight orgUnderline cterm=underline gui=underline
+highlight link orgVerbatim Normal
 
 
 "" syntax region orgCode          start=/\(\s\|^\)\zs\~\S/ end=/\S\~\ze\(\s\|$\)/ containedin=ALL

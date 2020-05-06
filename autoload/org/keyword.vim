@@ -1,102 +1,29 @@
+function! org#keyword#checktext(text, ...) abort " {{{1
+  let keywords = exists('a:1') ? a:1 : org#outline#keywords()
+  return a:text =~# '^\*\+\s\+\(' . join(keywords, '\|') . '\)'
+endfunction
 
-function! org#keyword#cycle(direction) abort " {{{1
+function! org#keyword#cycle(count, ...) abort " {{{1
   let line = getline('.')
   if !org#headline#checktext(line)
     return
   endif
+  let keywords = exists('a:1') ? a:1 : org#outline#keywords()
+  let current = org#keyword#parse(line, keywords)
+  let keywords = [''] + keywords
+  let next = keywords[(index(keywords, current) + a:count) % len(keywords)]
 
-  " Get current and next keywords
-  let current_keyword = org#headline#keyword(line)
-  let keywords = org#keyword#all('todo') + org#keyword#all('done')
-  let next = index(keywords, current_keyword) + a:direction
-  if next == -1 || next >= len(keywords)
-    let next_keyword = ''
-  elseif next == -2
-    let next_keyword = keywords[-1]
+  if empty(current)
+    let new_line = substitute(line, '\v^\*+\s+', '&' . next . ' ', '')
+  elseif empty(next)
+    let new_line = substitute(line, '\v^(\*+\s+)' . current . '\s?', '\1', '')
   else
-    let next_keyword = keywords[next]
-  endif
-
-  " Substitute, with extra stuff for edge cases
-  if empty(current_keyword)
-    let new_line = substitute(line, '^\*\+\s\+', '&' . next_keyword . ' ', '')
-  elseif empty(next_keyword)
-    let new_line = substitute(line, '\(^\*\+\s\+\)' . current_keyword . '\s\?', '\1', '')
-  else
-    let new_line = substitute(line, '\(^\*\+\s\+\)' . current_keyword, '\1' . next_keyword, '')
+    let new_line = substitute(line, '\v^(\*+\s+)' . current, '\1' . next, '')
   endif
   call setline('.', new_line)
 endfunction
 
-function! org#keyword#op(up) abort " {{{1
-  let reg_save = @@
-
-  let lnum = org#headline#find('.', 0, 'nbW')
-  if a:up
-    while empty(org#headline#keyword(getline(lnum))) && org#headline#level(lnum) > 1
-      let lnum = org#headline#find(lnum, 0, 'nbxW')
-    endwhile
-  endif
-  if org#headline#has_keyword(getline(lnum))
-    normal! m`
-    call cursor([lnum, 1])
-    normal! wve
-    if v:operator == 'd'
-      normal! oho
-    endif
-  else
-    " TODO exclusive/inclusive operators?
-    if v:operator == 'y'
-      return
-    endif
-    normal! m`
-    call cursor([lnum, matchend(getline(lnum), '\**') + 1])
-    normal! v
-    if v:operator == 'c'
-      call feedkeys("\<C-r>\"\<C-g>U\<Left>\<Space>")
-    endif
-  endif
-
-endfunction
-
-function! org#keyword#all(...) abort " {{{1
-  " 'todo' and 'done' give lists, as does 'all'. Default is a dictionary
-  " TODO combine all and get -- keyword cache in agenda_cache?
-  let keywords = get(b:, 'org_keywords', org#keyword#get())
-  if get(a:, 1, '') =~# '\ctodo'
-    let keywords = keywords[0]
-  elseif get(a:, 1, '') =~# '\cdone'
-    let keywords = keywords[1]
-  elseif get(a:, 1, '') =~# '\call'
-    let keywords = keywords[0] + keywords[1]
-  endif
-  return keywords
-endfunction
-
-function! org#keyword#get() abort " {{{1
-  " org_keywords augroup defined in plugin/org.vim, resets b:org_keywords
-  let [todo, done] = [[], []]
-  let cursor = getcurpos()[1:]
-  call cursor(1, 1)
-  while search('^#+TODO:', 'zcWe')
-    let [t, d] = org#keyword#parse(getline('.'))
-    call extend(todo, t)
-    call extend(done, d)
-  endwhile
-  call cursor(cursor)
-  let b:org_keywords = [empty(todo) ? ['TODO'] : todo, empty(done) ? ['DONE'] : done]
-  return b:org_keywords
-endfunction
-
-function! org#keyword#parse(text) abort " {{{1
-  let [todo, done] = matchlist(a:text, g:org#regex#todo)[1:2]
-  return [split(todo), split(done)]
-endfunction
-
-function! org#keyword#highlight() abort " {{{1
-  let [todo, done] = org#keyword#all()
-  silent! syntax clear orgTodo orgDone
-  " TODO add user defined groups. pretty straightforward, if config scheme updated.
-  execute 'syntax keyword orgTodo ' . join(todo) . ' containedin=orgHeadlineKeywords,@orgHeadline'
-  execute 'syntax keyword orgDone ' . join(done) . ' containedin=orgHeadlineKeywords,@orgHeadline'
+function! org#keyword#parse(text, ...) abort " {{{1
+  let keywords = exists('a:1') ? a:1 : org#outline#keywords()
+  return matchstr(a:text, '^\*\+\s\+\zs\(' . join(keywords, '\|') . '\)')
 endfunction

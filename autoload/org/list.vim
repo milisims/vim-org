@@ -1,55 +1,120 @@
-function! org#list#has_bullet(text) abort " {{{1
-  return a:text =~# g:org#regex#list#bullet
-endfunction
-
-function! org#list#has_ordered_bullet(text) abort " {{{1
-  return a:text =~# g:org#regex#list#ordered_bullet
-endfunction
-
-function! org#list#has_unordered_bullet(text) abort " {{{1
-  return a:text =~# g:org#regex#list#unordered_bullet
-endfunction
-
-function! org#list#has_checkbox(text) abort " {{{1
-  return a:text =~# g:org#regex#list#upto#checkbox
-endfunction
-
-function! org#list#has_check(text) abort " {{{1
-  return a:text =~? g:org#regex#list#upto#checkedbox
-endfunction
-
 function! org#list#checkline(lnum) abort " {{{1
-  let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
-  return org#list#item_is_unordered(lnum) || org#list#item_is_ordered(lnum)
+  return org#listitem#checkline(a:lnum)
 endfunction
 
-function! org#list#parent_item_range(lnum) abort " {{{1
+function! org#list#find(lnum, ...) abort " {{{1
+  " This should find *starts* of lists.
+  " 'x' should be "find next list that this line is not a part of at all"
+  " TODO flags
+  let flags = get(a:, 1, '')
   let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
-  let [start, end] = org#list#item_range(lnum)
-  if start == 0
-    return [0, 0]
+  let range = org#list#range(lnum)
+
+  if !org#list#checkline(lnum) " No list, find first one we see.
+    return org#listitem#find(lnum, 0, flags)
+  elseif flags =~# 'x'  " Find first list that doesn't have any shared parents with lnum
+    let flags = substitute(flags, 'x', '', 'g')
+    let lnum = org#listitem#parent(lnum, 1)
+    let [_, lnum] = org#list#range(lnum)
+    return org#listitem#find(lnum, 0, flags)
   endif
-  let search = org#util#search(start, '^\(' . matchstr(getline(start), '^\s*') . '\)\@!', 'nbW')
-  if search == 0
-    return [0, 0]
+
+  if flags =~# 'n'
+    let curpos = getcurpos()[1:]
+  else
+    let flags = flags . 'n'
   endif
-  let [parent_start, parent_end] = org#list#item_range(search)
-  return (parent_start == 0 || start > parent_end) ? [0, 0] : [parent_start, parent_end]
+  " Find next list start.
+  let lnum = org#listitem#start(lnum)
+  " TODO use search() over org#util#search in loops.
+  let lnum = org#util#search(lnum, org#listitem#regex(lnum) . '@!', 'x' . flags)
+  let lnum = org#util#search(lnum, g:org#regex#listitem, flags)
+  while lnum > 0 && lnum != org#list#range(lnum)[0]
+    let lnum = org#listitem#start(lnum)
+    let lnum = org#util#search(lnum, org#listitem#regex(lnum) . '@!', 'x' . flags)
+    let lnum = org#util#search(lnum, g:org#regex#listitem, flags)
+  endwhile
+  if exists('curpos')
+    call cursor(curpos)
+  endif
+  return lnum
+endfunction
+
+function! org#list#is_ordered(lnum) abort " {{{1
+  return org#listitem#is_ordered(a:lnum)
+endfunction
+
+function! org#list#is_unordered(lnum) abort " {{{1
+  return org#listitem#is_unordered(a:lnum)
 endfunction
 
 function! org#list#level(lnum) abort " {{{1
-  let [start, end] = org#list#item_range(a:lnum)
-  let level = 0
-  while start > 0
-    let level += 1
-    let [start, end] = org#list#parent_item_range(start)
-  endwhile
-  return level
+  return org#listitem#level(a:lnum)
 endfunction
 
-function! s:list_bullet_regex(text) abort " {{{2
-  " let [whitespace, bullet] = ['\s*', '\v(([-+*]|([0-9]+|[A-Za-z])[.)])']
-  " TODO should s:list_bullet_regex use very magic expressions?
+function! org#list#linesperitem(lnum) abort " {{{1
+  let [lnum, lower_bound] = org#list#range(a:lnum)
+  let regex = '^' . join(s:list_bullet_regex(getline(lnum)), '')
+  let items = []
+  while lnum > 0
+    call add(items, org#listitem#range(lnum))
+    let lnum = org#util#search(lnum + 1, regex, 'nW', lower_bound)
+  endwhile
+  return items
+endfunction
+
+function! org#list#range(lnum) abort " {{{1
+  " FIXME: no idea what this is doing.
+  " let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
+  let item_start = org#listitem#start(a:lnum)
+  if item_start == 0
+    return [0, 0]
+  endif
+
+  let [whitespace, bullet_regex] = s:list_bullet_regex(getline(item_start))
+  " 3 'ends' : double space, less indentation (don't match empty single lines),
+  " == indent with differnt list marker
+  let pattern = '^$\n^$'
+  let pattern .= empty(whitespace) ? '' : '\|^\(' . whitespace . '\|$\)\@!'
+  let pattern .= '\|^' . whitespace . '\(\s\+\|' . bullet_regex . '\)\@!'
+  let upper_bound = org#util#search(item_start, pattern, 'bnW')
+  let lower_bound = org#util#search(item_start, pattern, 'nW')
+  let upper_bound = upper_bound > 0 ? upper_bound : 1
+  let lower_bound = lower_bound > 0 ? lower_bound : line('$')
+  let start = org#util#search(upper_bound, '^' . whitespace . bullet_regex, 'nW')
+  let end = org#util#search(lower_bound, '^' . whitespace . bullet_regex, 'bnW')
+  let end = org#listitem#end(end)
+  return [start, end]
+endfunction
+
+function! org#list#reorder() abort range " {{{1
+  if a:firstline == a:lastline
+    let [lnum, lower_bound] = org#list#range(a:firstline)
+  else
+    let lnum = org#listitem#start(a:firstline)
+    let lower_bound = a:lastline
+  endif
+  let [ws, bl, cs, _, _, _] = matchlist(getline(lnum), g:org#regex#listitem)[1:6]
+  let regex = org#listitem#regex(lnum)
+  " If alpha bullets, check for upper/lowercase
+  if empty(cs)
+    let char = bl[0] =~# '\a'
+    let count = char ? (getline(lnum) =~# '\s*\l' ? 97 : 65) : 1
+  else
+    let char = cs =~# '\a'
+    let count = char ? char2nr(cs) : str2nr(cs)
+  endif
+  let dot = bl[-1:]
+  while lnum > 0
+    let text = ws . (char ? nr2char(count) : count) . dot
+    call setline(lnum, substitute(getline(lnum), regex, text, ''))
+    let count += 1
+    let lnum = org#util#search(lnum + 1, regex, 'nW', lower_bound)
+  endwhile
+endfunction
+
+function! s:list_bullet_regex(text) abort " {{{1
+  " TODO should this use very magic expressions?
   let bullet = split(a:text)[0]
   let whitespace = matchstr(a:text, '^\s*')
   if bullet =~# '\d\+)'
@@ -64,248 +129,4 @@ function! s:list_bullet_regex(text) abort " {{{2
     return [whitespace, '\*']
   endif
   return [whitespace, bullet]
-endfunction
-
-" function! s:list_bullet_regex(text) abort " {{{1
-"   let [whitespace, bullet] = ['\s*', '[[:alnum:]*+-]']
-"   let bullet = split(a:text)[0]
-"   let whitespace = matchstr(a:text, '^\s*')
-"   if bullet ==# '-'
-"     return [whitespace, '-']
-"   elseif bullet ==# '+'
-"     return [whitespace, '+']
-"   elseif bullet ==# '*'
-"     return [whitespace, '\*']
-"   elseif bullet =~# '\d\+)'
-"     return [whitespace, '\d\+)']
-"   elseif bullet =~# '\d\+\.'
-"     return [whitespace, '\d\+\.']
-"   elseif bullet =~# '\a)'
-"     return [whitespace, '\a)']
-"   elseif bullet =~# '\a\.'
-"     return [whitespace, '\a\.']
-"   endif
-"   return white
-"   throw 's:list_bullet_regex(' . a:text . ') contains no list bullet'
-" endfunction
-
-function! org#list#item_range(lnum) abort " {{{1
-  let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
-  let regex = s:listitem_start_regex(a:lnum)
-  let max = org#headline#find(a:lnum, 0, 'nbW')
-  let start = org#util#search(a:lnum, regex, 'bnW', max)
-  " TODO: Find a better solution to text starting at col 0 with no whitespace and not a list leader
-  if start == 0 || regex == ''
-    return [0, 0]
-  endif
-  let regex = s:listitem_end_regex(start)
-  let end = org#util#search(start, regex, 'nW')
-  return lnum > end ? [0, 0] : [start, end > 0 ? end : line('$')]
-endfunction
-
-function! s:listitem_start_regex(lnum, ...) abort " {{{2
-  " Construct a regex for searching upward to find the start of the item at lnum
-  let whitespace = matchstr(getline(a:lnum), '^\s*')
-  let regex = ''
-  if !org#list#has_bullet(getline(a:lnum))
-    if !empty(whitespace)
-      let regex .= '^\(' . whitespace . '\)\@!'
-    else
-      return ''
-    endif
-  endif
-  let type = get(a:, 1, 'any')
-  if type ==? '^u'
-    let regex .= '\v(\s*[-+]|\s+\*)'
-  elseif type ==? '^o'
-    let regex .= '\v(\s*(\d+|\a)[.)])'
-  else
-    let regex .= '\v(\s*([-+]|(\d+|\a)[.)])|\s+\*)'
-  endif
-  return regex
-endfunction
-
-function! s:listitem_end_regex(lnum) abort " {{{2
-  " lnum assumed to be the list item start
-  let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
-  let whitespace = matchstr(getline(lnum), '^\s*')
-  let endmatch = '\n^$\n^$'
-  let endmatch .= '\|\n' . whitespace . '\S'
-  if !empty(whitespace)
-    let endmatch .= '\|\n\(' . whitespace . '\)\@!'
-  endif
-  return endmatch
-endfunction
-
-function! org#list#range(lnum) abort " {{{1
-  " FIXME: no idea what this is doing.
-  " let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
-  let lnum = org#list#item_start(a:lnum)[0]
-  if lnum == 0
-    return [0, 0]
-  endif
-  let regex = s:listitem_start_regex(a:lnum)
-  let max = org#headline#find(a:lnum, 0, 'nbW')
-  let item_start = org#util#search(a:lnum, regex, 'bnW', max)
-  let [whitespace, bullet_regex] = s:list_bullet_regex(getline(item_start))
-  " 3 'ends' : double space, less indentation (don't match empty single lines),
-  " == indent with differnt list marker
-  let pattern = '^$\n^$'
-  let pattern .= empty(whitespace) ? '' : '\|^\(' . whitespace . '\|$\)\@!'
-  let pattern .= '\|^' . whitespace . '\(\s\+\|' . bullet_regex . '\)\@!'
-  let upper_bound = org#util#search(item_start, pattern, 'bnW')
-  let lower_bound = org#util#search(item_start, pattern, 'nW')
-  let upper_bound = upper_bound > 0 ? upper_bound : 1
-  let lower_bound = lower_bound > 0 ? lower_bound : line('$')
-  let start = org#util#search(upper_bound, '^' . whitespace . bullet_regex, 'nW')
-  let end = org#util#search(lower_bound, '^' . whitespace . bullet_regex, 'bnW')
-  let end = org#list#item_end(end)
-  return [start, end]
-endfunction
-
-
-function! org#list#item_lines(lnum) abort " {{{1 RENAME
-  let [lnum, lower_bound] = org#list#range(a:lnum)
-  let regex = '^' . join(s:list_bullet_regex(getline(lnum)), '')
-  let items = []
-  while lnum > 0
-    call add(items, org#list#item_range(lnum))
-    let lnum = org#util#search(lnum + 1, regex, 'nW', lower_bound)
-  endwhile
-  return items
-endfunction
-
-function! org#list#find(lnum, ...) abort " {{{1
-  let flags = get(a:, 1, '')
-  return org#util#search(a:lnum, g:org#regex#list#bullet, flags)
-endfunction
-
-function! org#list#find_same(lnum, ...) abort " {{{1
-  " used as part of a list to find next/prev item of that list
-  let flags = get(a:, 1, '')
-  let [upper_bound, lower_bound] = org#list#range(a:lnum)
-  if upper_bound == 0
-    return 0
-  endif
-
-  let pattern = '^' . join(s:list_bullet_regex(getline(upper_bound)), '')
-  let bound = flags =~# 'b' ? upper_bound : lower_bound
-  return org#util#search(a:lnum, pattern, flags, bound)
-endfunction
-
-function! org#list#item_indent(direction) abort " {{{1
-  let range = org#list#item_range('.')
-  if range[0] + range[1] > 0 && ! (a:direction < 0 && indent(range[0]) == 0)
-    execute 'silent!' join(range, ',') . (a:direction > 0 ? '>' : '<')
-  endif
-endfunction
-
-function! org#list#reorder() abort " {{{1
-endfunction " TODO reorder_listitem
-
-function! org#list#item_add(lnum, text, ...) abort " {{{1
-  let checkbox = get(a:, 1, 0)
-  if org#list#checkline(a:lnum)
-    let [start, end] = org#list#item_range(a:lnum)
-    let [whitespace, bullet] = matchlist(getline(start), '\v^(\s*)(%([-+*]|%(\d+|\a)[.)]))')[1:2]
-  else
-    let [end, whitespace, bullet] = [a:lnum, '  ', '-']  " TODO getme from options
-  endif
-  if type(a:text) == v:t_list  " list
-    let bws = whitespace . substitute(bullet, '.', ' ', 'g') . ' '
-    let bullet = bullet . (checkbox ? ' [ ] ' : ' ')
-    let text = [whitespace . bullet . a:text[0]] + map(a:text[1:], 'bws . v:val')
-  else  " assume string
-    let bullet = bullet . (checkbox ? ' [ ] ' : ' ')
-    let text = whitespace . bullet . a:text
-  endif
-  call append(end, text)
-endfunction
-
-function! org#list#checkbox_add() abort " {{{1
-  let line = getline('.')
-  if !org#list#has_bullet(line) || org#list#has_checkbox(line)
-    return
-  endif
-  call setline('.', substitute(line, '^\s*\([-+]\|\(\d\+\|\a\)[.)]\|\s\*\)\s\+', '&[ ] ', ''))
-endfunction
-
-function! org#list#checkbox_remove() abort " {{{1
-  let line = getline('.')
-  if !org#list#has_bullet(line) || !org#list#has_checkbox(line)
-    return
-  endif
-  call setline('.', substitute(line, '^\s*\([-+]\|\(\d\+\|\a\)[.)]\|\s\*\)\s*\zs\s\(\[[xX -]\]\)', '', ''))
-endfunction
-
-function! org#list#checkbox_toggle() abort " {{{1
-  let line = getline('.')
-  if !org#list#has_bullet(line)
-    return
-  endif
-  if org#list#has_checkbox(line)
-    call org#list#checkbox_remove()
-  else
-    call org#list#checkbox_add()
-  endif
-endfunction
-
-function! org#list#check_toggle() abort " {{{1
-  let line = getline('.')
-  if !org#list#has_checkbox(line)
-    return
-  endif
-  if org#list#has_check(line)
-    call setline('.', substitute(line, '\[[xX]\]', '[ ]', ''))
-  else
-    call setline('.', substitute(line, '\[ \]', '[X]', ''))
-  endif
-  " TODO: if sublist, do the thing
-endfunction
-
-function! org#list#item_decompose(lnum) abort " {{{1
-  " For now, undefined results on non list items.
-  " Whitespace, bullet,
-  " FIXME: Should also decompose recursively
-  let [start, end] = org#list#item_range(a:lnum)
-  let item = {'complete': join(getline(start, end))}
-  let [bullet, text] = split(item.complete, '\v^\s*([-+*]|(\d+|\a)[.)])\zs\s*\ze')
-  let [item.whitespace, item.bullet] = split(bullet, '\s*\zs\ze')
-  " Messy: that last argument
-  let [item.checkbox, item.contents] = split(text, '\v^(\[[ xX-]])?\zs\s*\ze.*', !(text =~? '^\[[ X]]'))
-  return item
-endfunction
-
-function! org#list#item_start(lnum) abort " {{{1
-  return org#list#item_range(a:lnum)[0]
-endfunction
-
-function! org#list#item_end(lnum) abort " {{{1
-  return org#list#item_range(a:lnum)[1]
-endfunction
-
-function! org#list#item_is_ordered(lnum) abort " {{{1
-  let lstart = org#list#item_start(a:lnum)
-  return lstart < 0 ? 0 : org#list#has_ordered_bullet(getline(lstart))
-endfunction
-
-function! org#list#item_is_unordered(lnum) abort " {{{1
-  let lstart = org#list#item_start(a:lnum)
-  return lstart < 0 ? 0 : org#list#has_unordered_bullet(getline(lstart))
-endfunction
-
-function! org#list#bullet_cycle(lnum, direction) abort " {{{1
-  " TODO get global/buffer var
-  let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
-  let bullets = get(g:, 'org#list#bullet_order', ['-', '+', '*'])
-  let bullet = org#list#get_bullet(lnum)
-  let index = index(bullets, bullet)
-  if index >= 0
-    let next = bullets[(index + a:direction) % len(bullets)]
-    call setline(lnum, substitute(getline(lnum), bullet, next, ''))
-  endif
-endfunction
-
-function! org#list#get_bullet(lnum) abort " {{{1
-  return matchstr(getline(a:lnum), '\v^\s*(\zs[-+]|\zs(\d+|\a)[.)]|\s\zs\*)')
 endfunction

@@ -8,7 +8,7 @@ setlocal foldtext=org#fold#text()
 setlocal formatoptions=1tronlj
 setlocal commentstring=#\ %s
 setlocal comments=b:+,b:-,fb:*
-setlocal formatlistpat=^\\s*\\w\\+[.)]\\s*
+setlocal formatlistpat=^\\s*\\w\\+[.)]\\s*\\\|^\\s*\\([-+]\\\|\\s\\@1<=\\*\\)\\s\\+
 setlocal formatexpr=org#util#format()
 
 " So backspace and <C-t> and <C-d> behave consistently
@@ -82,9 +82,11 @@ nmap <buffer> [u <Plug>(org-headline-lower-prev)
 xmap <buffer> ]u <Plug>(org-headline-lower-next)
 xmap <buffer> [u <Plug>(org-headline-lower-prev)
 
-inoremap <buffer> <C-g>t <C-o>diW<C-r>=org#timestamp#ftime2text(org#timestamp#parsetext(@"))<Cr>
-inoremap <buffer> <C-g><C-t> <C-o>diW<C-r>=org#timestamp#ftime2text(org#timestamp#parsetext(@"))<Cr>
+inoremap <buffer> <C-g>t <C-o>diW<C-r>=org#time#dict(@").totext()<Cr>
+inoremap <buffer> <C-g><C-t> <C-o>diW<C-r>=org#time#dict(@").totext()<Cr>
 
 " DEV STUFF
 
-command! -nargs=* -complete=customlist,org#timestamp#completion Plan call org#plan('.')
+command! -nargs=* Plan call org#plan('.')
+" command! -nargs=* -complete=customlist,org#time#completion Plan call org#plan('.')
+command! -buffer -nargs=* -complete=customlist,org#outline#complete Refile call org#refile(<q-args>)

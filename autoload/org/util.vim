@@ -1,7 +1,6 @@
 function! org#util#search(lnum, pattern, flags, ...) abort " {{{1
-  " search({pattern} [, {flags} [, {stopline} [, {timeout}]]])
-  " If starting search from end of line/end column, curpos at end of file
-  " TODO be explicit about exclusive vs inclusive lnum
+  " org#util#search is a wrapper for search() which allows a lnum to search for, and adds the 'x'
+  " flag: exclusive search from the start line.
   let cursor = getcurpos()[1:]
   let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
   let flags = a:flags
@@ -20,106 +19,12 @@ function! org#util#search(lnum, pattern, flags, ...) abort " {{{1
     call cursor(lnum + (flags =~# 'b' ? 1 : 0), 1)
     let flags = flags . (flags =~# 'b' ? 'z' : 'c')
   endif
+  " search({pattern} [, {flags} [, {stopline} [, {timeout}]]])
   let search = call(function('search'), extend([a:pattern, flags], a:000))
   if stridx(flags, 'n') >= 0 || search == 0
     call cursor(cursor)
   endif
   return search
-endfunction
-
-function! org#util#format(...) abort " {{{1
-" The |v:lnum|  variable holds the first line to be formatted.
-" The |v:count| variable holds the number of lines to be formatted.
-" The |v:char|  variable holds the character that is going to be
-"       inserted if the expression is being evaluated due to
-"       automatic formatting.  This can be empty.  Don't insert
-"       it yet!
-  " for each header block in region
-  " if empty, behave like:
-  " * h1
-  " ** h2
-  " *** h3
-  " ** h2.2
-  "                                 <-------- this empty line is removed
-  "                                 <-------- this empty line is removed
-  " ** h2.3
-  "
-  " if not:
-  " * h1
-  "                                 <-------- this empty line is removed
-  " ** h2
-  " something
-  "                                 <-------- this empty line is added
-  " ** any other header
-  "
-  " no other formatting
-  if exists('a:2')
-    let [lnum, end] = [a:1, a:2]
-  elseif exists('a:1')
-    let [lnum, end] = [a:1, a:1]
-  else
-    let [lnum, end] = [v:lnum, v:lnum + v:count]
-  endif
-  let lnum = org#headline#find(lnum, 0, 'nbW')
-  while lnum <= end && lnum > 0
-    call org#headline#format(lnum)
-    " FIXME This won't work for ranges properly, modifying text as we go
-    let lnum = org#headline#find(lnum, 0, 'nxW')
-  endwhile
-
-  " Format lists
-  return
-endfunction
-
-function! org#util#get(name, default, ...) abort " {{{1
-  " Not sure this will work out
-  let append = get(a:, 1, 0)
-  let b = get(b:, name, a:default)
-  let g = get(g:, name, a:default)
-  if b == g || b == a:default
-    return g
-  endif
-  if append && type(g) == v:t_list
-     call extend(g, b)
-     return g
-  elseif append && type(g) == v:t_dict
-    return extend(g, b)
-  endif
-
-endfunction
-
-function! org#util#decompose(expr, pats, ...) abort " {{{1
-  let strip = get(a:, 1, 0)
-  let res = []
-  let expr = a:expr
-  for p in a:pats
-    let match = matchstrpos(expr, p)
-    if strip
-      let match[0] = substitute(match[0], '\s*\(.*\)\s*', '\1', '')
-    endif
-    call add(res, match[0])
-    if match[1] >= 0
-      let expr = expr[match[2]:]
-    endif
-  endfor
-  return strip ? map(): res
-endfunction
-
-function! org#util#group(text, pattern) abort " {{{1
-  " Only works with very magic
-  if a:pattern !~# '\v'
-    throw 'Very magic only'
-  endif
-  let groups = []
-  let count = 0
-  let braces = 0
-  for c in split(pattern, '\zs')
-    if c == '(' || c == ')' && !escaped
-      let count += c == '(' ? 1 : -1
-      if count == 0
-      endif
-    endif
-  endfor
 endfunction
 
 function! org#util#seqsortfunc(properties, ...) abort " {{{1
