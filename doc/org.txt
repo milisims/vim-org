@@ -1,0 +1,180 @@
+*vim-org*	For Vim version 8.0	Last change: 2020 May 28
+
+Author:  Emilia Simmons
+License: Same terms as Vim (see |license|)
+
+===============================================================================
+                                                                 *org-contents*
+CONTENTS~
+
+    1. Contents                 |org-contents|
+    2. Overview                 |org-overview|
+    3. Nomenclature             |org-wtf|
+    4. Usage                    |org-usage|
+      4.1 Agenda                |org-agenda|
+      4.2 Capture               |org-capture|
+      4.3 Links                 |org-links|
+    5. Commands                 |org-commands|
+    6. Maps                     |org-maps|
+    7. Autocmd hooks            |org-autocmds|
+    8. Customization            |org-customization|
+    9. API                      |org-api|
+    10. Export                  |org-export|
+    11. Migrating from emacs    |org-migration|
+    12. Development             |org-development|
+    13. Changelog               |org-changelog|
+
+===============================================================================
+                                                                 *org-overview*
+OVERVIEW~
+
+vim-org is a filetype plugin that implements a emacs' orgmode-like syntax and
+similar design ideas. Specifically, for keeping notes, maintaining TODO lists,
+and planning projects. Authoring documents has partial support.
+
+List of Features:
+
+  1. Document structure
+  1. Folding of headlines
+  2. Planning TODO lists
+  3. Handling dates and times
+  4. Agendas
+  5. Capturing
+
+Not implemented, but plan to:
+  Clocking
+  Tables
+  Working with source code (sort of)
+
+Not implemented, with no plan to:
+Internal exporting. See |org-export| for integration with pandoc or emacs.
+
+===============================================================================
+                                                                      *org-wtf*
+NOMENCLATURE~
+
+In line with the api-forward design of vim-org, there are some defined terms so
+it is always clear to users and plugin developers what types of objects refer
+to what, and what their design intent is.
+
+org-list       Exists only in text
+org-listitem   Exists only in text
+org-checkitem  Exists only in text
+org-headline   Line starting with `*`, represented by a dict.
+org-section    The text including a headline to the next headline of the same level or lower.
+org-timestamp  Dictionary
+org-plan       When do you think about/process the entry    A dictionary of timestamps
+
+org-entry      any headline and section, usually referring to the headline
+org-item       any list item
+
+===============================================================================
+                                                                    *org-usage*
+USAGE~
+
+OrgTutor
+
+-------------------------------------------------------------------------------
+                                                                   *org-agenda*
+AGENDA~
+
+text
+
+-------------------------------------------------------------------------------
+                                                                  *org-capture*
+CAPTURE~
+
+text
+
+-------------------------------------------------------------------------------
+                                                                    *org-links*
+LINKS~
+
+text
+
+===============================================================================
+                                                                 *org-commands*
+COMMANDS~
+
+text
+
+===============================================================================
+                                                                     *org-maps*
+MAPS~
+
+text
+
+===============================================================================
+                                                     *org-hooks* *org-autocmds*
+AUTOCMDS~
+
+There are many |User| |autocmd| hooks, some of which are used by org by default
+and allow you to customize the experience. For example, the |formatexpr| for
+org filetypes is set to |org#util#format| by default, which does nothing except
+execute >
+    doautocmd User OrgFormat
+<
+
+Consequently, we can remove the default list formatting and use the default
+headline formatting with:>
+    augroup myorgformat
+      autocmd!
+      autocmd! User OrgFormat
+      autocmd User OrgFormat call org#headline#format()
+      autocmd User OrgFormat call someformatfunc()
+    augroup END
+<
+
+For more examples and recommendations, see |org-customization|.
+
+# TODO better example. Just change formatexpr...
+# this is also a bad example because ranges what now?
+
+
+===============================================================================
+                                                                      *org-api*
+API~
+
+vim-org is designed to facilitate the user and plugin developers to interact
+with the org system in a (hopefully) mentally low-effort way.
+
+To `lnum` or not to `lnum`:
+Generally, if a function returns a meaningful value, it requests an lnum. If
+it edits text, it will accept a range rather than an lnum argument.
+
+List of functions:                                          *org-function-list*
+
+|org#headline#find|                 Moves to next headline.
+
+
+Functions in detail:                                            *org-functions*
+
+org#headline#find({lnum} [, {level} [, {search-args}]])     *org#headline#find*
+		Find the next headline, starting at `{lnum}`, at or below
+		`{level}`. Use 0 for any level.
+		See |org#util#search| for details on {|search-args|}.
+
+
+===============================================================================
+                                                            *org-customization*
+CUSTOMIZATION~
+
+text
+
+===============================================================================
+                                                                   *org-export*
+EXPORT~
+
+text
+
+===============================================================================
+                                                              *org-development*
+DEVELOPMENT~
+
+text
+
+===============================================================================
+                                                                *org-changelog*
+CHANGELOG~
+
+text
