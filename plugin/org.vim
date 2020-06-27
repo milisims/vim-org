@@ -79,8 +79,8 @@ nnoremap <silent> <Plug>(org-checkbox-add)           :call org#listitem#checkbox
 nnoremap <silent> <Plug>(org-checkbox-remove)        :call org#listitem#checkbox_remove()<CR>
 nnoremap <silent> <Plug>(org-checkbox-toggle)        :call org#listitem#checkbox_toggle()<CR>
 
-nnoremap <silent> <Plug>(org-todo-cycle)      :call org#keyword#cycle(1)<CR>
-nnoremap <silent> <Plug>(org-todo-cycle-back) :call org#keyword#cycle(-1)<CR>
+nnoremap <silent> <Plug>(org-todo-cycle)      :<C-u>call org#keyword#cycle(v:count1)<CR>
+nnoremap <silent> <Plug>(org-todo-cycle-back) :<C-u>call org#keyword#cycle(-v:count1)<CR>
 
 " Editing:
 nnoremap <silent> <Plug>(org-shift-right)      :call org#shift(1, 'n')<CR>

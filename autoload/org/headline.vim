@@ -1,15 +1,30 @@
-function! org#headline#add(lnum, level, text, ...) abort " {{{1
+function! org#headline#add(level, text, ...) abort " {{{1
   " level <= 0 for previous.
   " Do we say lnum = .. - 1, or append at -1? Difference is where level is calculated.
   " TODO keyword? Maybe have lnum act like index? allow negative numbers
   " let keyword = get(a:, 1, 0)
-  let level = a:level > 0 ? a:level : org#headline#level(a:lnum)
+  let level = a:level > 0 ? a:level : org#headline#level('.')
   if level == 0
     let level = 1
   endif
   " If whitespace, just the whitespace. if text, space + text. If empty, no space.
   let text = empty(a:text) ? '' : (a:text =~? '\S' ? ' ' . a:text : a:text)
-  call append(a:lnum, repeat('*', level) . text)
+  call append('.', repeat('*', level) . text)
+endfunction
+
+function! org#headline#addtag(tag) abort " {{{1
+  let lnum = org#headline#at('.')
+  let current = matchlist(getline(lnum), org#headline#regex())[5]
+  if empty(current)
+    call setline(lnum, substitute(getline(lnum), '\s\+$', '', '') . ' :' . a:tag . ':')
+  elseif index(split(current, ':'), a:tag) < 0
+    call setline(lnum, substitute(getline(lnum), '\s\+$', '', '') . a:tag . ':')
+  endif
+endfunction
+
+function! org#headline#gettags(lnum) abort " {{{1
+  let lnum = org#headline#at(lnum)
+  return org#headline#parse(getline(lnum)).tags
 endfunction
 
 function! org#headline#astarget(expr) abort " {{{1
@@ -105,7 +120,7 @@ function! org#headline#fromtarget(target, ...) abort " {{{1
       let lnum = org#util#search(range[0], prefix . headlines[ix] . suffix, 'nx', range[1])
       if lnum == 0
         let level = ix == 0 ? 1 : max([org#headline#get(range[0]).level + 1, ix + 1])
-        call org#headline#add(range[1], level, headlines[ix])
+        execute range[1] 'call org#headline#add(level, headlines[ix])'
         let lnum = range[1] + 1
       endif
       let range = org#section#range(lnum)
@@ -126,7 +141,7 @@ function! org#headline#get(lnum, ...) abort " {{{1
   " FIXME: if no headline or invalid number, return an empty dictionary
   " Get is not short circuited, but ternary expressions are.
   let keywords = exists('a:1') ? a:1 : org#outline#keywords()
-  let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
+  let lnum = org#headline#at(a:lnum)
   let info = org#headline#parse(getline(lnum), keywords)
   " :h tag-function: name, filename, cmd, kind, user_data?
   let info.filename = resolve(fnamemodify(bufname(), ':p'))
@@ -136,7 +151,6 @@ function! org#headline#get(lnum, ...) abort " {{{1
   let info.properties = org#property#all(lnum)
   return info
 endfunction
-
 
 function! org#headline#level(lnum, ...) abort " {{{1
   let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
@@ -165,8 +179,24 @@ function! org#headline#promote(...) abort " {{{1
 endfunction
 
 function! org#headline#regex(...) abort " {{{1
+  " stars, keyword, priority, text, tags
   let keywords = join(exists('a:1') ? a:1.all : org#outline#keywords().all, '|')
-  return '\v^(\*+)\s+%((' . keywords . ')\s)?\s*%((\[#\a\])\s)?\s*(.{-})\s*(:%([[:alpha:]_@#%]+:)+)?\s*$'
+  return '\v^(\*+)\s+%((' . keywords . ')\s)?\s*%((\[#\a\])\s)?\s*(.{-})\s*(:%([[:alnum:]_@#%]+:)+)?\s*$'
+endfunction
+
+function! org#headline#set(text) abort " {{{1
+  let lnum = org#headline#at('.')
+  let current = matchlist(getline(lnum), org#headline#regex())[4]
+  let current = escape(current, '\')
+  if empty(current)
+    throw 'NYI set empty text'
+  endif
+  call setline(lnum, substitute(getline(lnum), '\V' . escape(current, '\'), a:text, ''))
+endfunction
+
+function! org#headline#settag(tag) abort " {{{1
+  let lnum = org#headline#at('.')
+  call setline(lnum, substitute(getline(lnum), '\v\s?(:%([[:alnum:]_@#%]+:)+)?\s*$', ' :' . a:tag . ':', ''))
 endfunction
 
 function! org#headline#subtree(lnum, ...) abort " {{{1

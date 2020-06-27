@@ -118,18 +118,26 @@ function! org#plan(expr) abort " {{{1
   call org#plan#set(a:lnum, timestamp)
 endfunction
 
-function! org#refile(destination, ...) abort " {{{1
+function! org#refile(destination) abort " {{{1
   " Does not distinguish between two identical headlines.
   " TODO? define behavior for a/b/c? or require.org ?
 
-  " Setup variables for autocmd
-  if exists('a:1')
-    let g:org#refile#source = org#headline#fromtarget(a:destination)
-    let g:org#refile#destination = org#headline#fromtarget(a:1)
-  else
-    let g:org#refile#source = org#headline#get(org#headline#at('.'))
-    let g:org#refile#destination = org#headline#fromtarget(a:destination)
+  " TODO remove this
+  let src = exists('a:1') ? a:destination : '.'
+  let dest = exists('a:1') ? a:1 : a:destination
+
+  if line(src) > 0
+    let src = org#headline#get(org#headline#at(line(src)))
+  elseif type(src) == v:t_string
+    let src = org#headline#fromtarget(src)
   endif
+
+  if type(dest) == v:t_string
+    let dest = org#headline#fromtarget(dest)
+  elseif type(dest) == v:t_string
+    let dest = org#headline#get(dest)
+  endif
+  let [g:org#refile#source, g:org#refile#destination] = [src, dest]
   doautocmd User OrgRefilePre
 
   " Find range of source and remove text we're filing
@@ -141,19 +149,24 @@ function! org#refile(destination, ...) abort " {{{1
 
   " Find destination line number and add lines
   if resolve(fnamemodify(destination.filename, ':p')) != resolve(expand('%:p'))
+    " TODO use tag? so it will use switchbuf?
     execute 'edit' destination.filename
   endif
   let lnum = org#section#range(destination.lnum)[1]
   call append(lnum, text)
 
   " shift headlines to make sense
+  if !has_key(destination, 'level')  " just a file
+    let destination.level = 0
+  endif
   let shift = destination.level == refile_level ? 1 : destination.level + 1 - refile_level
-
-
   let range = lnum + 1 . ',' . (lnum + 1 + end - st)
   execute range . 'call org#shift(' . shift . ', "n")'
 
+  let g:org#refile#last = org#headline#get(lnum + 1)
+
   doautocmd User OrgRefilePost
+  unlet! g:org#refile#last
   unlet! g:org#refile#source
   unlet! g:org#refile#destination
 endfunction

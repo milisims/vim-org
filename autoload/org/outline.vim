@@ -1,24 +1,34 @@
+let s:outlineCache = {}
+
 function! org#outline#complete(arglead, cmdline, curpos) abort " {{{1
   " See :h :command-completion-customlist
   " To be used with customlist, not custom. Works with spaces better, and regex are nice.
   " autocmd unlets with CmdLineLeave
   if !exists('g:org#outline#complete#cache')
-    let g:org#outline#complete#cache = []
-    " let outlines = get(g:, 'org#outline#complete#cache', org#outline#full())
-    for fname in split(glob(org#dir() . '/**/*.org'), '\n')
-      let outline = org#outline#file(fname)
-      let fname = substitute(fname, resolve(fnamemodify(org#dir(), ':p')) . '/\?', '', '')
-      call add(g:org#outline#complete#cache, fname)
-      for toplevel in outline.subtrees
-        call s:build_complcache(fname, toplevel)
+    if !exists('g:org#outline#complete#targets')
+      let targets = []
+      for [fname, outline] in items(org#outline#full())
+        call add(targets, fnamemodify(fname, ':t'))
+        call extend(targets, map(outline.list, 'v:val.target'))
       endfor
-    endfor
-    autocmd org_completion CmdlineLeave * ++once unlet! g:org#outline#complete#cache
-    autocmd org_completion CmdlineLeave * ++once unlet! g:org#outline#complete#filter
+    elseif type(g:org#outline#complete#targets[0]) == v:t_dict
+      let targets = map(g:org#outline#complete#targets, 'v:val.target')
+    elseif type(g:org#outline#complete#targets[0]) == v:t_string
+      let targets = g:org#outline#complete#targets
+    else
+      throw 'Org: elements of g:org#outline#complete#targets must be outline dicts or target strings'
+    endif
+    let g:org#outline#complete#cache = sort(targets)
+    autocmd org_completion CmdlineLeave,CompleteDone,InsertEnter * ++once unlet! g:org#outline#complete#cache
+    autocmd org_completion CmdlineLeave,CompleteDone,InsertEnter * ++once unlet! g:org#outline#complete#filter
+    autocmd org_completion CmdlineLeave,CompleteDone,InsertEnter * ++once unlet! g:org#outline#complete#targets
   endif
-  let filter = get(g:, 'org#outline#complete#filter', 'v:val =~? a:arglead')
-  let compl = filter(copy(g:org#outline#complete#cache), filter)
-  return compl
+  if !empty(a:arglead)
+    " TODO Not sure if I want to keep this filter
+    let filter = get(g:, 'org#outline#complete#filter', 'v:val =~ glob2regpat(a:arglead)[1:-2]')
+    return filter(copy(g:org#outline#complete#cache), filter)
+  endif
+  return g:org#outline#complete#cache
 endfunction
 
 function! s:build_complcache(str, hl) abort " {{{1
@@ -47,10 +57,11 @@ function! org#outline#file(fname, ...) abort " {{{1
   let force = get(a:, 1, 0)
   let mtime = getftime(fname)
   if !force && has_key(s:outlineCache, fname) && s:outlineCache[fname].mtime == mtime
-    return s:outlineCache[fname]
+    return s:copy(s:outlineCache[fname])
   endif
 
-  let fsummary = {'mtime': mtime, 'kwmtime': mtime, 'keywords': {'todo': [], 'done': []}, 'list': [], 'subtrees': [], 'lnums': {}}
+  let fsummary = {'mtime': mtime, 'kwmtime': mtime, 'keywords': {'todo': [], 'done': []}, 'subtrees': [], 'lnums': {}}
+  let shortname = substitute(fname, resolve(fnamemodify(org#dir(), ':p')) . '/\?', '', '')
 
   let starttabnr = tabpagenr()
   execute 'noautocmd $tab split' fname
@@ -59,31 +70,29 @@ function! org#outline#file(fname, ...) abort " {{{1
     let lnum = org#headline#find(1, 0, 'W')
     while lnum > 0
       let subtrees = org#headline#subtree(lnum, fsummary.keywords)
-      call s:add_cmd(subtrees, '')
+      call s:add_cmd(subtrees, {'target': shortname, 'cmd': ''})
       call add(fsummary.subtrees, subtrees)
-      call extend(fsummary.list, s:flatten(subtrees))
+      " call extend(fsummary.list, s:flatten(subtrees))
       let lnum = org#headline#find(lnum, 1, 'Wx')
     endwhile
   finally
     quit
     execute 'noautocmd normal!' starttabnr . 'gt'
   endtry
-  for hl in fsummary.list
-    let fsummary.lnums[hl.lnum] = hl
-  endfor
-  return fsummary
+  let s:outlineCache[fname] = fsummary
+  return s:copy(fsummary)
 endfunction
 
 function! org#outline#full(...) abort " {{{1
-  let expr = get(a:, 1, '.')
-  let force = get(a:, 2, 0)
-  let files = type(expr) == v:t_string ? glob(expr, 0, 1) : expr
+  let force = get(a:, 1, 0)
+  " TODO fix this glob
+  let files = glob(org#dir() . '/**/*.org', 0, 1)
+  let outline = {}
   for fname in files
-    let s:outlineCache[fname] = org#outline#file(fname, force)
+    let outline[fname] = org#outline#file(fname, force)
   endfor
-  return deepcopy(s:outlineCache)
+  return outline
 endfunction
-let s:outlineCache = {}
 
 function! org#outline#keywords(...) abort " {{{1
   let force = get(a:, 1, 0)
@@ -92,7 +101,7 @@ function! org#outline#keywords(...) abort " {{{1
   let mtime = getftime(fname)
 
   if !has_key(s:outlineCache, fname)
-    call org#outline#full(fname)
+    call org#outline#file(fname)
     call s:keyword_highlight(s:outlineCache[fname].keywords)
   elseif (force || s:outlineCache[fname].kwmtime != mtime || &modified)
     let s:outlineCache[fname].kwmtime = mtime
@@ -102,19 +111,33 @@ function! org#outline#keywords(...) abort " {{{1
   return s:outlineCache[fname].keywords
 endfunction
 
-function! s:add_cmd(subtree, cmd) abort " {{{1
+function! s:add_cmd(subtree, parent) abort " {{{1
   let [headline, subtrees] = a:subtree
-  let headline.cmd = a:cmd . '/\V\^' . escape(headline.text, '/\') . '\$/'
+  let headline.target = a:parent.target . '/' . headline.item
+  " escaping '/' as the delimiter
+  let headline.cmd = a:parent.cmd . '/\V\^' . escape(headline.text, '/\') . '\$/'
   for st in subtrees
-    call s:add_cmd(st, headline.cmd)
+    call s:add_cmd(st, headline)
   endfor
 endfunction
 
+function! s:copy(cache) abort " {{{1
+  " 'list', 'lnums', 'subtrees', 'mtime', 'keywords', 'kwmtime'
+  let ccopy = copy(a:cache)  " shallow
+  let ccopy.subtrees = deepcopy(a:cache.subtrees)
+  let ccopy.list = s:flatten(ccopy.subtrees) " linked
+  for hl in ccopy.list
+    let ccopy.lnums[hl.lnum] = hl
+  endfor
+  return ccopy
+endfunction
+
+" TODO make a version of this available
 function! s:flatten(subtree) abort " {{{1
-  let [headline, subtrees] = a:subtree
-  let flattened = [headline]
-  for st in subtrees
-    call extend(flattened, s:flatten(st))
+  let flattened = []
+  for st in a:subtree
+    call add(flattened, st[0])
+    call extend(flattened, s:flatten(st[1]))
   endfor
   return flattened
 endfunction

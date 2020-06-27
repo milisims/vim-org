@@ -38,8 +38,6 @@ let s:months_ly = [
 " BIG TODO: use \v\c everywhere, or \v\C
 
 function! org#time#dict(text, ...) abort " {{{1
-  " 12 * 3600 for noon. Prevents +/- 1 hour errors from DST for adding/subtracting weeks.
-  " TODO checkout :h /\&
   try
     if string(str2nr(a:text)) == a:text
       return s:dict_from_ftime(a:text)
@@ -123,6 +121,37 @@ function! org#time#dict(text, ...) abort " {{{1
   return s:dict_from_ftime(ftime, opts)
 endfunction
 
+function! org#time#diff(t1, t2) abort " {{{1
+  " Difference of two times or floats
+  " 0 if times overlap, difference in closest start/end otherwise
+  if type(a:t1) == v:t_dict && type(a:t2) == v:t_dict
+    if a:t1.end < a:t2.start
+      return a:t1.end - a:t2.start
+    elseif a:t1.start > a:t2.end
+      return a:t1.start - a:t2.end
+    endif
+    return 0
+
+  elseif type(a:t1) == v:t_dict
+    if a:t1.end < a:t2
+      return a:t1.end - a:t2
+    elseif a:t1.start > a:t2
+      return a:t1.start - a:t2
+    endif
+    return 0
+
+  elseif type(a:t2) == v:t_dict
+    if a:t1 < a:t2.start
+      return a:t1 - a:t2.start
+    elseif a:t1 > a:t2.end
+      return a:t1 - a:t2.end
+    endif
+    return 0 " times overlap
+  endif
+
+  return a:t1 - a:t2  " both numbers
+endfunction
+
 function! s:text2ftimerange(date, ...) abort " {{{1
 
   let [date, time, repeat, delay] = matchlist(a:date, g:org#regex#timestamp#full4)[1:4]
@@ -199,33 +228,3 @@ function! s:totext(...) abort dict " {{{1
   return o . timetext . c
 endfunction
 
-function! org#time#diff(t1, t2) abort " {{{1
-  " Difference of two times or floats
-  " 0 if times overlap, difference in closest start/end otherwise
-  if type(a:t1) == v:t_dict && type(a:t2) == v:t_dict
-    if a:t1.end < a:t2.start
-      return a:t1.end - a:t2.start
-    elseif a:t1.start > a:t2.end
-      return a:t1.start - a:t2.end
-    endif
-    return 0
-
-  elseif type(a:t1) == v:t_dict
-    if a:t1.end < a:t2
-      return a:t1.end - a:t2
-    elseif a:t1.start > a:t2
-      return a:t1.start - a:t2
-    endif
-    return 0
-
-  elseif type(a:t2) == v:t_dict
-    if a:t1 < a:t2.start
-      return a:t1 - a:t2.start
-    elseif a:t1 > a:t2.end
-      return a:t1 - a:t2.end
-    endif
-    return 0 " times overlap
-  endif
-
-  return a:t1 - a:t2  " both numbers
-endfunction

@@ -11,9 +11,12 @@ function! org#edit#openhl(direction) abort " {{{1
     let next = next == 0 ? prevnonblank(line('$')) : next - 1
     " If the headlines are neighbors, don't add empty spaces.
   endif
-  call org#headline#add(next, level, ' ')
+  execute next 'call org#headline#add(level, '' '')'
   call cursor(next + 1, level + 2)
   startinsert!
 
   doautocmd User OrgFormat  " ???
 endfunction
+
+" function! org#edit#addprop(?) abort " {{{1
+" function! org#edit#addkeyword(?) abort " {{{1

@@ -78,25 +78,34 @@ function! org#plan#remove(lnum) abort " {{{1
   endif
 endfunction
 
-function! org#plan#set(lnum, plan) abort " {{{1
+function! org#plan#add(plan) abort " {{{1
+  let plan = type(a:plan) == v:t_string ? org#plan#fromtext(a:plan) : a:plan
+  if type(plan) != v:t_dict
+    throw 'Org: {plan} must be type string or dict'
+  endif
+  let plan = extend(org#plan#get('.'), plan)
+  call org#plan#set(plan)
+endfunction
+
+function! org#plan#set(plan) abort " {{{1
   " Assumes date has keys 'ftime', 'active', and optionally 'type'.
   " timestamp/scheduled/deadline/closed: {'ftime': float, 'active': [01]}
   " Overwrites any current timestamp.
-  let lnum = org#section#headline(a:lnum)
+  let lnum = org#section#headline('.')
   if lnum == 0
     throw 'No headline found'
   endif
 
-  let plan = a:time
-  if type(a:time) == v:t_string
-    let plan = org#plan#fromtext(a:time)
-  elseif type(a:time) != v:t_dict
+  let plan = a:plan
+  if type(plan) == v:t_string
+    let plan = org#plan#fromtext(plan)
+  elseif type(plan) != v:t_dict
     throw 'Org: {plan} must be type string or dict'
   endif
 
   let text = []
   for [kind, time] in items(plan)
-    call append(text, kind =~# 'TIMESTAMP' ? '' : kind . ': ')
+    call add(text, kind =~# 'TIMESTAMP' ? '' : kind . ': ')
     let text[-1] .= type(time) != v:t_dict ? org#time#dict(time).totext() : time.totext()
   endfor
   let text = join(text)

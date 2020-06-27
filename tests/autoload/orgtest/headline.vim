@@ -22,7 +22,7 @@ endfunction
 
 function! orgtest#headline#add() abort " {{{1
   call s:setup()
-  call org#headline#add(1, 2, 'text')
+  1call org#headline#add(2, 'text')
   call assert_equal('** text', getline(2))
 endfunction
 

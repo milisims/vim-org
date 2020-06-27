@@ -1,37 +1,54 @@
-function! org#property#add(lnum, props, ...) abort " {{{1
-  let properties = type(a:props) == v:t_dict ? a:props : {a:props : get(a:, 1, 0)}
-  if type(a:props) == v:t_dict
-    let properties = items(a:props)
-    let position = get(a:, 1, -1)
-  elseif type(a:props) == v:t_list
-    if type(a:props[0]) != v:t_list
-      let names = a:1  " If providing a list of names, must provide a list of values
-      let properties = map(copy(a:props), {ix, v -> [v, name[ix]]})
-      let position = get(a:, 2, -1)
+function! org#property#add(props, ...) abort " {{{1
+  " Get properties
+  " Replace non-list existing props
+  " Add multiple for lists
+  " Add properties properly otherwise
+  let properties = org#property#all('.')
+  let rn = s:makedrawer()
+
+  let new = []
+  let set = {}
+  for [name, val] in items(a:props)
+    if name !~? '\v[[:alnum:]_-]+'
+      throw 'org: property poorly named. Name must match: ''\v[[:alnum:]_-]+'''
+    endif
+    if name !~ '+$' && has_key(properties, name)
+      let lnum = org#util#search(rn[0], '^:' . a:name . ':', 'nxW', rn[1])
+      let set[lnum] = ':' . name . ': ' . val
+    elseif name =~ '+$' && type(val) == v:t_list
+      call extend(new, map(copy(val), '":" . name . ": " . v:val'))
     else
-      let position = get(a:, 1, -1)
+      call add(new, ':' . name . ': ' . val)
     endif
-  else
-    let properties = [[a:props, a:1]]
-    let position = get(a:, 2, -1)
-  endif
-
-  let [dstart, dend] = org#property#drawer_range(a:lnum)
-  if dstart == 0
-    let dstart = org#headline#at(a:lnum) + (org#plan#checkline(a:lnum) ? 1 : 0)
-    call append(dstart, [':PROPERTIES:', ':END:'])
-    let [dstart, dend] = [dstart + 1, dstart + 2]
-  endif
-
-  for [name, val] in properties
-    if name =~? '\s'
-      throw 'Property name can not contain whitespace'
-    endif
-    let lnum = position >= 0 ? dstart + position : dend + position
-    call append(lnum, ':' . name . ': ' . val)
-    let dend += 1
   endfor
 
+  call map(set, 'setline(v:key, v:val)')
+  let position = exists('a:1') ? (a:1 + rn[0]) : rn[1]
+  let position = min([rn[1] - 1, max([0, position])])
+  call append(position, new)
+endfunction
+
+function! org#property#set(props) abort " {{{1
+  " TODO rename and redo makedrawer
+  let rn = s:makedrawer()
+  if rn[1] - rn[0] > 1
+    execute rn[0] . ',' . rn[1] . 'd _'
+  endif
+  let text = []
+  for [name, val] in items(a:props)
+    if name !~? '\v[[:alnum:]_-]+'
+      throw 'org: property poorly named. Name must match: ''\v[[:alnum:]_-]+'''
+    endif
+    if name =~ '+$' && type(val) == v:t_list
+      call extend(text, map(copy(val), '":" . name . ": " . v:val'))
+    else
+      call add(text, ':' . name . ': ' . val)
+    endif
+  endfor
+  if len(text) > 0
+    let text = [':PROPERTIES:'] + text + [':END:']
+    call append(rn[0], text)
+  endif
 endfunction
 
 function! org#property#all(lnum, ...) abort " {{{1
@@ -81,7 +98,7 @@ function! org#property#get(lnum, name, ...) abort " {{{1
   if lnum > 0
     return org#property#parse(getline(lnum))[1]
   endif
-  return a:1  " Property does not exist if you see this, add optional default arg
+  return a:1  " Property does not exist
 endfunction
 
 function! org#property#isindrawer(lnum) abort " {{{1
@@ -103,3 +120,14 @@ function! org#property#remove(lnum, name) abort " {{{1
     call cursor(cursor)
   endif
 endfunction
+
+function! s:makedrawer() abort " {{{1
+  let [dstart, dend] = org#property#drawer_range('.')
+  if dstart == 0
+    let dstart = org#headline#at('.') + (org#plan#checkline('.') ? 1 : 0)
+    call append(dstart, [':PROPERTIES:', ':END:'])
+    let [dstart, dend] = [dstart + 1, dstart + 2]
+  endif
+  return [dstart, dend]
+endfunction
+

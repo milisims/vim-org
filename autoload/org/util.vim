@@ -41,3 +41,15 @@ function! org#util#seqsortfunc(properties, ...) abort " {{{1
   endfunction
   return funcref('s:seqsortf')
 endfunction
+
+function! org#util#complete(arglead, cmdline, curpos) abort " {{{1
+  " See :h :command-completion-customlist
+  " To be used with customlist, not custom. Works with spaces better, and regex are nice.
+  " autocmd unlets with CmdLineLeave
+  if exists('g:org#complete#repeat') " FIXME fix for vim bug
+    let pt = split(a:arglead, ' ', 1)[-1]
+  else
+    let pt = a:arglead
+  endif
+  return filter(copy(g:org#complete#list), 'v:val =~ pt')
+endfunction
