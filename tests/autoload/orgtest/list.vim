@@ -88,7 +88,7 @@ function! orgtest#list#find() abort " {{{1
   call assert_equal(1, org#list#find(32, 'w'))
   call assert_equal(0, org#list#find(33, 'W'))
   call assert_equal(1, org#list#find(33, 'w'))
-
+  call assert_equal(13, org#list#find(11, 'x'))
 endfunction
 
 function! orgtest#list#is_ordered() abort " {{{1

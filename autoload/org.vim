@@ -179,26 +179,21 @@ function! org#shift(count, mode) range abort " {{{1
   "   line b
   let lnum = a:firstline
   let cursor = getcurpos()[1:]
+  let curlen = col('$')
   if org#headline#checkline(a:firstline) " {{{2
     while lnum >= a:firstline && lnum <= a:lastline
       call cursor(lnum, 0)
-      if a:count > 0
-        call org#headline#promote(a:count)
-      else
-        call org#headline#demote(a:count)
-      endif
+      call org#headline#{a:count > 0 ? 'promote' : 'demote'}(a:count)
       let lnum = org#headline#find(lnum, 0, 'nxW')
     endwhile
-    if a:mode == 'i'
-      call feedkeys(a:count > 0 ? "\<C-g>U\<Right>" : "\<C-g>U\<Left>", 'n')
-    endif
-    return
   elseif org#list#checkline(a:firstline) " {{{2
-    " TODO reorder and bullet cycling
+    return
+    " FIXME doesn't work because list#find 'x' flag isn't working properly
+
     let lnum = org#listitem#start(a:firstline)
     let items = []
     let range = [0, 0]
-    while lnum >= a:firstline && lnum <= a:lastline || empty(items)
+    while empty(items) || (lnum >= a:firstline && lnum <= a:lastline)
       if range[1] < lnum
         call add(items, lnum)
         let range = org#listitem#range(lnum)
@@ -207,27 +202,25 @@ function! org#shift(count, mode) range abort " {{{1
     endwhile
 
     for lnum in items
-      " TODO format me after indenting
-      " FIXME if a list with sub items is visually selected, the sublists are moved twice
       call cursor(lnum, 1)
       call org#listitem#indent(a:count)
-      " if org#listitem#get_bullet(lnum) == org#listitem#get_bullet(org#listitem#parent_range(lnum)[0])
-      "   if org#listitem#is_unordered(lnum)
-      "     call org#listitem#bullet_cycle(lnum, 1)  " a:count)
-      "   endif
-      "   if org#listitem#is_ordered(lnum)
-      "     call org#list#reorder()
-      "   endif
-      " endif
+      if org#listitem#get_bullet(lnum) == org#listitem#get_bullet(org#listitem#parent_range(lnum)[0])
+        if org#listitem#is_unordered(lnum)
+          call org#listitem#bullet_cycle(lnum, 1)  " a:count)
+        endif
+        if org#listitem#is_ordered(lnum)
+          call org#list#reorder()
+        endif
+      endif
     endfor
 
   else " plain text for now {{{2
     " FIXME: fails in insert mode
-    execute a:firstline.','.a:lastline . (a:direction > 0 ? '>' : '<')
+    execute a:firstline.','.a:lastline . (a:count > 0 ? '>' : '<')
   endif " }}}
 
   if a:mode == 'i'
-    let cursor[1] += a:direction * &shiftwidth
+    let cursor[1] += col('$') - curlen
   endif
   call cursor(cursor)
 endfunction
