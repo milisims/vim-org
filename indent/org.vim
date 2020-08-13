@@ -4,7 +4,7 @@
 " endif
 
 function! GetOrgIndent(...) abort " {{{1
-  let lnum = exists('a:1') ? a:1 : v:lnum
+  let lnum = get(a:, 1, v:lnum)
   let prefix = get(g:, 'org#indent#to_hllevel', 0) ? org#headline#level(lnum) : 0
   if getline(lnum) =~# '^\*\|^\s*#'  " if headline or #
     return 0
