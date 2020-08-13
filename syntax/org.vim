@@ -110,7 +110,7 @@ highlight link orgTimeDelay         Comment
 highlight link orgTimestampElements Comment
 
 syntax region orgListItem matchgroup=orgListLeader
-      \ start=/^\z(\s*\)\zs[-+]/ start=/^\z(\s*\)\zs\(\d\+\|\a\)[.)]/ start=/^\z(\s\+\)\zs\*/
+      \ start=/^\z(\s*\)[-+]/ start=/^\z(\s*\)\(\d\+\|\a\)[.)]/ start=/^\z(\s\+\)\*/
       \ end=/\ze\n\z1\S/ end=/\ze\n^$\n^$/ end=/\ze\n\z1\@!/
       \ contains=orgListItem,orgListCheck,orgListTag,@Spell keepend
 syntax match orgListCheck  contained nextgroup=orgListTag              skipwhite /\(\[[xX -]\]\)/
