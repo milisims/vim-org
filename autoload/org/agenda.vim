@@ -13,21 +13,16 @@ function! org#agenda#daily(...) abort " {{{1
   return agenda
 endfunction
 
-function! org#agenda#display(agenda, ...) abort " {{{1
+function! org#agenda#toqf(agenda) abort " {{{1
   let s:lastDisplayed = a:agenda  " TODO change me to autocmds
-  let Display = get(a:, 1, 0)
-  if type(Display) == v:t_string
-    let Display = function(Display)
-  elseif type(Display) != v:t_func
-    let Display = function('org#agenda#toqf')
-  endif
-  let Separator = get(a:, 2, 0)
-  let qfagenda = map(copy(a:agenda), Display)
-  if type(Separator) == v:t_func
-    let qfagenda = Separator(qfagenda, a:agenda)
-  endif
+  let qfagenda = []
+  for item in a:agenda
+    call add(qfagenda, {'lnum': item.lnum,
+        \ 'filename': bufname(item.bufnr),
+        \ 'module': fnamemodify(item.filename, ':t'),
+        \ 'text': item.todo . '	' . item.target })
+  endfor
   call setqflist(qfagenda)
-  copen
 endfunction
 
 function! org#agenda#files(...) abort " {{{1
@@ -88,18 +83,6 @@ function! org#agenda#todo() abort " {{{1
   return agenda
 endfunction
 
-function! org#agenda#toqf(item, ...) abort " {{{1
-  let opts = get(a:, 1, {})
-  let qfitem = {'lnum': a:item.lnum,
-        \ 'filename': bufname(a:item.bufnr),
-        \ 'module': fnamemodify(a:item.filename, ':t'),
-        \ 'text': a:item.todo . '	' . a:item.item }
-        " \ 'item': a:item,
-  for [k, v] in items(opts)
-    let qfitem[k] = get(a:item, v, v)
-  endfor
-  return qfitem
-endfunction
 
 function! org#agenda#tree(...) abort " {{{1
   " a:1 regex of matching filenames
