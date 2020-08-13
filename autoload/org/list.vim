@@ -13,7 +13,6 @@ function! org#list#find(lnum, ...) abort " {{{1
   if !org#list#checkline(lnum) " No list, find first one we see.
     return org#listitem#find(lnum, 0, flags)
   elseif flags =~# 'x'  " Find first list that doesn't have any shared parents with lnum
-    let flags = substitute(flags, 'x', '', 'g')
     let lnum = org#listitem#parent(lnum, 1)
     let [_, lnum] = org#list#range(lnum)
     return org#listitem#find(lnum, 0, flags)

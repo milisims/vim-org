@@ -123,19 +123,22 @@ function! org#listitem#parent(lnum, ...) abort " {{{1
   let toplevel = get(a:, 1, 0)
   let itemstart = org#listitem#start(a:lnum)
   if itemstart == 0
-    return toplevel ? a:lnum : 0
+    return 0
+    " return toplevel ? a:lnum : 0
   endif
 
-  let search = org#util#search(itemstart,
-        \ '\v^%(' . matchstr(getline(itemstart), '^\s*') . '\s*'
-        \ . g:org#regex#list#bullet . ')@!\s*' . g:org#regex#list#bullet,
-        \ 'nbW')
+  let [ws, bl] = [matchstr(getline(itemstart), '^\s*'), g:org#regex#list#bullet]
+  let search = org#util#search(itemstart, '\v^%(' . ws . '\s*' . bl . ')@!\s*' . bl, 'nbW')
 
   let [parent_start, parent_end] = org#listitem#range(search)
   if (parent_start == 0 || itemstart > parent_end)
     return 0
   endif
-  return toplevel ? org#listitem#parent(parent_start, 1) : parent_start
+  if toplevel
+    let parent = org#listitem#parent(parent_start, 1)
+    return parent ? parent : parent_start
+  endif
+  return parent_start
 endfunction
 
 function! org#listitem#range(lnum) abort " {{{1

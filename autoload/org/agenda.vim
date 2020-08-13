@@ -1,7 +1,7 @@
-function! org#agenda#build(...) abort " {{{1
+function! org#agenda#full() abort " {{{1
   " TODO: do we want a 'deepcopy' for the agenda cache? Want the subtrees etc to point at
   " the right places?
-  return org#outline#full(org#agenda#files())
+  return org#outline#multi(org#agenda#files())
 endfunction
 
 function! org#agenda#daily(...) abort " {{{1
@@ -49,7 +49,7 @@ function! org#agenda#list(...) abort " {{{1
   if type(expr) == v:t_dict
     let fullAgenda = expr
   elseif type(expr) == v:t_string
-    let fullAgenda = filter(org#agenda#build(), {k, v -> k =~ expr})
+    let fullAgenda = filter(org#agenda#full(), {k, v -> k =~ expr})
   else
     throw 'Org: {expr} must be a list or an agenda'
   endif
@@ -105,7 +105,7 @@ function! org#agenda#tree(...) abort " {{{1
   " a:1 regex of matching filenames
   " returns {filename: {level: {lnum: headline, ...}, ...}, ...}
   let expr = get(a:, 1, '')
-  let fullAgenda = filter(org#agenda#build(), {k, v -> k =~ expr})
+  let fullAgenda = filter(org#agenda#full(), {k, v -> k =~ expr})
   return fullAgenda
 endfunction
 

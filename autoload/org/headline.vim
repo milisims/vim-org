@@ -72,7 +72,8 @@ function! org#headline#find(lnum, ...) abort " {{{1
   let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
   let level = get(a:, 1, 0)
   let flags = get(a:, 2, '')
-  let pattern = level > 0 ? ('^\*\{1,' . level . '}\(\s\+\|$\)') : '^\*\+\s*'
+  " let pattern = level > 0 ? ('^\*\{1,' . level . '}\(\s\+\|$\)') : '^\*\+\s*'
+  let pattern = '\v^\*' . (level > 0 ? '{1,' . level . '}' : '+') . '(\s+|$)'
   return org#util#search(lnum, pattern, flags)
 endfunction
 

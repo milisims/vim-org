@@ -1,5 +1,5 @@
 function! orgtest#outline#full() abort " {{{1
-  " call org#outline#full(...)
+  " call org#outline#multi(...)
 endfunction
 
 function! orgtest#outline#file() abort " {{{1
@@ -8,7 +8,7 @@ function! orgtest#outline#file() abort " {{{1
   setfiletype org
   call setline(1, ['#+TODO: A B | D', '* A a /'' b', ':PROPERTIES:', ':p1: 1', ':END:', '** B b', 'SCHEDULED: <2020-01-01>', '*** D c', 'CLOSED: <2015-01-01>', '** c', '* d'])
 
-**   let outline = org#outline#file(fname)
+  let outline = org#outline#file(fname)
   call assert_equal(1, outline.list[0].level)
   call assert_equal('a /'' b', outline.list[0].item)
   call assert_equal('/\V\^* A a \/'' b\$/', outline.list[0].cmd)

@@ -140,6 +140,8 @@ function! orgtest#listitem#indent() abort " {{{1
   1call org#listitem#indent(-3)
   call assert_equal('+ A', getline(1))
   call assert_equal('  a', getline(2))
+  " undo changes so 3 is not part of a list
+  normal! u
   3,9call org#listitem#indent(-1)
   call assert_equal(''          , getline(3))
   call assert_equal('- B'       , getline(4))

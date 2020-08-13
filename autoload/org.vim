@@ -187,32 +187,31 @@ function! org#shift(count, mode) range abort " {{{1
       let lnum = org#headline#find(lnum, 0, 'nxW')
     endwhile
   elseif org#list#checkline(a:firstline) " {{{2
-    return
-    " FIXME doesn't work because list#find 'x' flag isn't working properly
-
     let lnum = org#listitem#start(a:firstline)
     let items = []
-    let range = [0, 0]
-    while empty(items) || (lnum >= a:firstline && lnum <= a:lastline)
-      if range[1] < lnum
-        call add(items, lnum)
-        let range = org#listitem#range(lnum)
-      endif
-      let lnum = org#list#find(lnum, 'nxW')
+    " empty check is to make sure indenting from a multi-line item
+    while empty(items) || (lnum > 0 && lnum >= a:firstline && lnum <= a:lastline)
+      call add(items, lnum)
+      let lnum = org#listitem#find(org#listitem#range(lnum)[1], 0, 'nxW')
     endwhile
 
+    " Indent
     for lnum in items
       call cursor(lnum, 1)
       call org#listitem#indent(a:count)
-      if org#listitem#get_bullet(lnum) == org#listitem#get_bullet(org#listitem#parent_range(lnum)[0])
-        if org#listitem#is_unordered(lnum)
-          call org#listitem#bullet_cycle(lnum, 1)  " a:count)
-        endif
-        if org#listitem#is_ordered(lnum)
-          call org#list#reorder()
-        endif
-      endif
     endfor
+
+    " " FIXME reorder / cycle where necessary check bullet regex or something
+    " for lnum in items
+    "   if org#listitem#get_bullet(lnum) == org#listitem#get_bullet(org#listitem#parent_range(lnum)[0])
+    "     if org#listitem#is_unordered(lnum)
+    "       call org#listitem#bullet_cycle(lnum, 1)  " a:count)
+    "     endif
+    "     if org#listitem#is_ordered(lnum)
+    "       call org#list#reorder()
+    "     endif
+    "   endif
+    " endif
 
   else " plain text for now {{{2
     " FIXME: fails in insert mode

@@ -13,7 +13,7 @@ function! org#property#add(props, ...) abort " {{{1
       throw 'org: property poorly named. Name must match: ''\v[[:alnum:]_-]+'''
     endif
     if name !~ '+$' && has_key(properties, name)
-      let lnum = org#util#search(rn[0], '^:' . a:name . ':', 'nxW', rn[1])
+      let lnum = org#util#search(rn[0], '^:' . name . ':', 'nxW', rn[1])
       let set[lnum] = ':' . name . ': ' . val
     elseif name =~ '+$' && type(val) == v:t_list
       call extend(new, map(copy(val), '":" . name . ": " . v:val'))
@@ -30,6 +30,7 @@ endfunction
 
 function! org#property#set(props) abort " {{{1
   " TODO rename and redo makedrawer
+  " FIXME Merge with #add
   let rn = s:makedrawer()
   if rn[1] - rn[0] > 1
     execute rn[0] . ',' . rn[1] . 'd _'
@@ -89,7 +90,7 @@ endfunction
 
 function! org#property#get(lnum, name, ...) abort " {{{1
   " TODO ... get()
-  " Combine with all?
+  " TODO merge with #all
   let [start, end] = org#property#drawer_range(a:lnum)
   if start == 0
     throw 'No property drawer found'
@@ -102,8 +103,9 @@ function! org#property#get(lnum, name, ...) abort " {{{1
 endfunction
 
 function! org#property#isindrawer(lnum) abort " {{{1
-  let [lstart, lend] = org#property#drawer_range(a:lnum)
-  return a:lnum >= lstart && a:lnum <= lend
+  let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
+  let [lstart, lend] = org#property#drawer_range(lnum)
+  return lnum >= lstart && lnum <= lend
 endfunction
 
 function! org#property#parse(text) abort " {{{1

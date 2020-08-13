@@ -7,7 +7,7 @@ function! org#outline#complete(arglead, cmdline, curpos) abort " {{{1
   if !exists('g:org#outline#complete#cache')
     if !exists('g:org#outline#complete#targets')
       let targets = []
-      for [fname, outline] in items(org#outline#full())
+      for [fname, outline] in items(org#outline#multi())
         call add(targets, fnamemodify(fname, ':t'))
         call extend(targets, map(outline.list, 'v:val.target'))
       endfor
@@ -83,10 +83,16 @@ function! org#outline#file(fname, ...) abort " {{{1
   return s:copy(fsummary)
 endfunction
 
-function! org#outline#full(...) abort " {{{1
-  let force = get(a:, 1, 0)
+function! org#outline#multi(...) abort " {{{1
+  " TODO what is this? vs org#agenda"
+  let files = get(a:, 1, org#dir() . '/**/*.org')
+  if type(files) == v:t_string
+    let files = glob(files, 0, 1)
+  elseif type(files) != v:t_list
+    throw 'org: org#outline#multi arg 1 must be a glob string or list of files'
+  endif
+  let force = get(a:, 2, 0)
   " TODO fix this glob
-  let files = glob(org#dir() . '/**/*.org', 0, 1)
   let outline = {}
   for fname in files
     let outline[fname] = org#outline#file(fname, force)
