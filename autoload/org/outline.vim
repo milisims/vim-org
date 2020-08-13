@@ -70,7 +70,7 @@ function! org#outline#file(fname, ...) abort " {{{1
     let lnum = org#headline#find(1, 0, 'W')
     while lnum > 0
       let subtrees = org#headline#subtree(lnum, fsummary.keywords)
-      call s:add_cmd(subtrees, {'target': shortname, 'cmd': ''})
+      call s:add_cmd(subtrees, {'target': shortname, 'cmd': '0'})
       call add(fsummary.subtrees, subtrees)
       " call extend(fsummary.list, s:flatten(subtrees))
       let lnum = org#headline#find(lnum, 1, 'Wx')
