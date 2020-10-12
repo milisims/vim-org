@@ -1,7 +1,7 @@
 syntax clear
 
 " Dev-help {{{
-nnoremap <buffer> <F7> :set ft=org<CR>:call SynStack()<CR>
+nnoremap <buffer> <F7> :call SynStack()<CR>
 function! SynStack()
   if !exists('*synstack')
     return
@@ -30,6 +30,8 @@ syntax cluster orgHeadline add=orgHeadline8,orgHeadline9,orgHeadlineN
 " syntax region orgSection8 start=/^\*\{8}[^*]/ end=/^\ze\%(\*\{9}\)\@!\*\+/ fold transparent contains=@orgHeadline
 " syntax region orgSection9 start=/^\*\{9}[^*]/ end=/^\ze\%(\*\{10,}\)\@!\*\+/ fold transparent contains=@orgHeadline
 
+" syntax match orgHeadline /^\*\+[^*].*$/   contains=orgHeadlines nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+
 syntax match orgHeadline1 /^\*\{1}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
 syntax match orgHeadline2 /^\*\{2}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
 syntax match orgHeadline3 /^\*\{3}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
@@ -52,7 +54,7 @@ syntax match orgHeadlineText contained /\S.*$/ contains=orgHeadlineTags,@Spell t
 syntax match orgHeadlineTags contained /:\%([[:alnum:]_@#%]*:\)\+/ contains=@NoSpell
 syntax match orgHeadlinePriority contained /\[#\a\]/ nextgroup=orgHeadlineText skipwhite
 
-syntax match orgHeadlineKeywords contained transparent /\u\+\ze /
+syntax match orgHeadlineKeywords contained transparent /\u\+\ze\>/
       \ nextgroup=orgHeadlinePriority,orgHeadlineText skipwhite
 " These are overriden immediately, but want to keep defaults available
 syntax keyword orgTodo TODO containedin=orgHeadlineKeywords,@orgHeadline

@@ -1,6 +1,5 @@
 " setlocal spell
-" setlocal indentexpr=GetOrgIndent()
-" Default is nolisp nosmartindent autoindent.
+setlocal indentexpr=GetOrgIndent()
 setlocal indentkeys=0#,0*,0-,0+,0.,o,O,!^F
 setlocal foldmethod=expr
 setlocal foldexpr=org#fold#expr(v:lnum)

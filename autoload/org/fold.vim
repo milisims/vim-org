@@ -33,7 +33,7 @@ function! s:headline_text() abort " {{{1
   let linestr_spacing = repeat(' ', linestr_len - strwidth(linestr))
 
   let timestr = ''
-  let plan = org#plan#nearest(hl)
+  let plan = (hl)
   if !empty(plan)
     let timestr = (plan[0] =~# '^T' ? '' : plan[0][0]) . plan[1].text
   endif

@@ -4,6 +4,10 @@ function! org#property#add(props, ...) abort " {{{1
   " Add multiple for lists
   " Add properties properly otherwise
   let properties = org#property#all('.')
+  if !org#headline#at('.')
+    " throw 'org: trying to add property with no headline'
+    return
+  endif
   let rn = s:makedrawer()
 
   let new = []

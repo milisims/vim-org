@@ -51,22 +51,23 @@ function! org#plan#nearest(ts, ...) abort " {{{1
   " Allows to compute which happened first and by how far.
   " t1 should be a float, t2 should be a timestamp dict
   " Assumes one of the three exists
-  if has_key(a:ts, 'CLOSED')
+  let tcmp = get(a:, 1, localtime())
+  let retplan = get(a:, 2, 0)
+  if empty(a:ts) || has_key(a:ts, 'CLOSED')
     return {}
   elseif len(a:ts) == 1
-    return values(a:ts)[0]
+    return retplan ? copy(a:ts) : values(a:ts)[0]
   endif
-  let tcmp = get(a:, 1, localtime())
   let tdiff = map(copy(a:ts), org#time#diff(tcmp, v:val))
 
   if has_key(tdiff, 'TIMESTAMP') >= 0 && tdiff.TIMESTAMP <= s:p.d
-    return a:ts.TIMESTAMP
+    return retplan ? {'TIMESTAMP': a:ts.TIMESTAMP} : a:ts.TIMESTAMP
   elseif has_key(tdiff, 'DEADLINE') <= 0 && tdiff.DEADLINE >= -s:p.d * g:org#timestamp#deadline#time
-    return a:ts.DEADLINE
+    return retplan ? {'DEADLINE': a:ts.DEADLINE} : a:ts.DEADLINE
   elseif has_key(tdiff, 'SCHEDULED') >= 0 && tdiff.SCHEDULED <= s:p.d * g:org#timestamp#scheduled#time
-    return a:ts.SCHEDULED
+    return retplan ? {'SCHEDULED': a:ts.SCHEDULED} : a:ts.SCHEDULED
   endif
-  return {} " unplanned w.r.t now
+  return retname ? '' : {} " unplanned w.r.t now
 endfunction
 
 function! org#plan#remove(lnum) abort " {{{1
@@ -120,16 +121,15 @@ endfunction
 function! org#plan#get(lnum, ...) abort " {{{1
   " Might produce nonsense if planning is not well formatted.
   " TODO define well formatted. requires a space!
-  if !org#plan#checkline(a:lnum)
-    return {}
-  endif
-
   let inheritance = get(a:, 1, {})
   let plan = org#plan#fromtext(getline(org#section#headline(a:lnum) + 1))
   return extend(plan, inheritance, 'keep')
 endfunction
 
 function! org#plan#fromtext(text) abort " {{{1
+  if a:text !~# g:org#regex#timestamp#datetime0
+    return {}
+  endif
   let text = split(a:text, '\v[:><[\]]\zs\s+')
   let plan = {}
   let kind = 'TIMESTAMP'

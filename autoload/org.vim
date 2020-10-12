@@ -39,7 +39,7 @@ function! org#daily() abort " {{{1
 endfunction
 
 function! org#dir() abort " {{{1
-  return get(g:, 'org#dir', get(b:, 'org_dir', '~/org'))
+  return resolve(fnamemodify(get(b:, 'org_dir', get(g:, 'org#dir', '~/org')), ':p'))
 endfunction
 
 function! org#format() abort " {{{1

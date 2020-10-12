@@ -168,10 +168,10 @@ function! org#headline#parse(text, ...) abort " {{{1
   let keywords = exists('a:1') ? a:1 : org#outline#keywords()
   let [n, k, p, t, g] = matchlist(a:text, org#headline#regex(keywords))[1:5]
   let p = matchstr(p, '\a')
-  let d = index(keywords.done, k) >= 0 ? k : ''
-  let k = index(keywords.todo, k) >= 0 ? k : ''
+  let d = index(keywords.done, k) >= 0
+  " let k = index(keywords.todo, k) >= 0 ? k : ''
   let tgs = filter(split(g, ':'), '!empty(v:val)')
-  return {'level': len(n), 'todo': k, 'done': d, 'priority': p, 'item': t, 'text': a:text, 'tags': tgs}
+  return {'level': len(n), 'keyword': k, 'done': d, 'priority': p, 'item': t, 'text': a:text, 'tags': tgs}
 endfunction
 
 function! org#headline#promote(...) abort " {{{1
@@ -200,16 +200,3 @@ function! org#headline#settag(tag) abort " {{{1
   call setline(lnum, substitute(getline(lnum), '\v\s?(:%([[:alnum:]_@#%]+:)+)?\s*$', ' :' . a:tag . ':', ''))
 endfunction
 
-function! org#headline#subtree(lnum, ...) abort " {{{1
-  let keywords = exists('a:1') ? a:1 : org#outline#keywords()
-  let headline = org#headline#get(a:lnum, keywords)
-
-  let [lnum, end] = org#section#range(headline.lnum)
-  let lnum = org#headline#find(lnum, 0, 'nWx')
-  let subtree = []
-  while lnum > 0 && lnum <= end
-    call add(subtree, org#headline#subtree(lnum, keywords))
-    let lnum = org#headline#find(lnum, 0, 'nWx')
-  endwhile
-  return [headline, subtree]
-endfunction

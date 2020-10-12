@@ -129,8 +129,8 @@ endfunction
 function! orgtest#headline#parse() abort " {{{1
   let hl = org#headline#parse('** A [#C] a /''\ b :c:d:', {'todo': ['A'], 'done': ['B'], 'all': ['A', 'B']})
   call assert_equal(2, hl.level)
-  call assert_equal('A', hl.todo)
-  call assert_equal('', hl.done)
+  call assert_equal('A', hl.keyword)
+  call assert_equal(0, hl.done)
   call assert_equal('C', hl.priority)
   call assert_equal('a /''\ b', hl.item)
   call assert_equal('** A [#C] a /''\ b :c:d:', hl.text)  " checks escaping

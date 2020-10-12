@@ -53,3 +53,17 @@ function! org#util#complete(arglead, cmdline, curpos) abort " {{{1
   endif
   return filter(copy(g:org#complete#list), 'v:val =~ pt')
 endfunction
+
+function! org#util#fname(expr) abort " {{{1
+  " if bufname exists, return it. Otherwise check for relative file, then 
+  if !empty(bufname(a:expr))
+    return bufname(a:expr)
+  elseif filereadable(a:expr) || a:expr[0] =~ '[/~]'
+    let bn = a:expr
+  else
+    let bn = bufadd(org#dir() . '/' . a:expr)
+  endif
+  return resolve(fnamemodify(bn, ':p'))
+  " let bn = resolve(fnamemodify(bn, ':p'))
+  " return bufname(bn)
+endfunction

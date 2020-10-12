@@ -144,7 +144,7 @@ xnoremap <silent> <Plug>(org-capture) :call org#capture()<Cr>
 
 augroup org_keywords
   autocmd!
-  autocmd BufReadPost,BufWritePost *.org call org#outline#keywords()
+  autocmd BufWinEnter,BufWritePost *.org call org#outline#keywords()
 augroup END
 
 augroup org_completion
