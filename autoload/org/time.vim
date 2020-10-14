@@ -222,8 +222,8 @@ function! s:totext(...) abort dict " {{{1
   else   " date range
     let timetext = strftime(timefmt, self.start) . c . '--' . o . strftime(timefmt, self.end)
   endif
-  let timetext .= repeaterdelay && empty(self.repeater) ? '' : ' ' . self.repeater.text
-  let timetext .= repeaterdelay && empty(self.delay) ? '' : ' ' . self.delay.text
+  let timetext .= repeaterdelay && !empty(self.repeater) ? ' ' . self.repeater.text : ''
+  let timetext .= repeaterdelay && !empty(self.delay) ? ' ' . self.delay.text : ''
 
   return o . timetext . c
 endfunction
