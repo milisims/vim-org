@@ -53,29 +53,14 @@ endfunction
 
 " }}}
 
-function! s:getsection(section) abort  " {{{1 RENAME
-  " Seriously, why isn't get() short circuited?
-  let title = type(a:section.title) == v:t_string ? a:section.title : a:section.title()
-  let filter = a:section.filter
-  let files = has_key(a:section, 'files') ? a:section.files : org#agenda#files()
-  let sorter = has_key(a:section, 'sorter') ? a:section.sorter : g:org#agenda#sorter
-  " let display = has_key(a:section, 'display') ? a:section.display : g:org#agenda#display
-  let outline = org#outline#multi(files)  " should be fast enough, gets cached the first time
-  " let list = has_key(a:section, 'generator') ? a:section.generator(outline) : outline.list
-  let items = filter(outline.list, filter)
-  call sort(items, sorter)
-  return items
-endfunction
-
 " Highlighting done with matchaddpos, the display function? should highlight it
 
 let g:org#agenda#wincmd = get(g:, 'org#agenda#wincmd', 'keepalt topleft vsplit')
+let g:org#agenda#jump = get(g:, 'org#agenda#jump', 'edit')
 
-let s:agendabufs = {}
-
-augroup org_agenda
-  autocmd!
-augroup END
+" augroup org_agenda
+"   autocmd!
+" augroup END
 
 " Step 1: date and block display
 " step 2: customizable 'state' function, between file: headline
@@ -83,110 +68,181 @@ augroup END
 " TODO display format, like stl? %f -> filename, %t -> time, %p plan, etc.
 
 function! org#agenda#build(name) abort " {{{1
-  if index(g:org#agenda#views, a:name) < 0
+  if !has_key(g:org#agenda#views, a:name)
     throw 'Org: no agenda view with name ' . a:name . ' to build.'
   endif
+
   let bufname = 'Agenda_' . a:name
   let bufnum = bufnr(bufname, 1)
+
   if type(g:org#agenda#wincmd) == v:t_func
     call g:org#agenda#wincmd(bufname)
   else
     execute g:org#agenda#wincmd bufname
   endif
   setfiletype agenda
+  nnoremap <buffer> q :q<Cr>
+  " nnoremap <buffer> <Cr> :if has_key(b:to_hl, line('.')) | execute b:to_hl[line('.')] | echoerr 'Org: not on a headline'<Cr>
 
-  " execute 'autocmd org_agenda BufDelete <buffer> unlet! s:agendabufs[expand(' . a:name . ')]'
-  " let s:agendabufs[a:name] = bufnr()
-
-  for aview in g:org#agenda#views[a:name]
-    try
-      call g:org#agenda#display[aview.display](s:getsection(g:org#agenda#views))
-    catch /^Vim\%((\a\+)\)\=:E716/
-      echohl Error
-      echo 'Org: No way to display ' . aview.display . ', check g:org#agenda#display'
-      echohl None
-    endtry
-  endfor
-endfunction
-
-function! org#agenda#datetime(title, items) abort " {{{1
-  " Title
-  " Date
-  "   file:     9:00...... Scheduled: NEXT do a thing
-  "   file:    15:00...... Scheduled: TODO do a thing
-
-  if &filetype != 'agenda'
-    throw 'Org: trying to display an agenda in a non-agenda buffer'
-  endif
-
-  let today = org#time#dict('today')
-  let items = sort(copy(a:items), {a, b -> org#time#diff(values(a.plan)[0], values(b.plan)[0])})
-  let fname_width = max(map(copy(items), 'len(fnamemodify(v:val.filename, ":t"))')) + 2
-  let [time_width, plan_width] = [10, 12]
-  let all_text = empty(a:title) ? [] : [a:title]
-
-  let date = -9999999999
-  let lnum = line('$') + 1
-  let links = {}
-  for hl in items
-    let nearest = org#plan#nearest(hl.plan, today, 1)
-    if values(nearest)[0].start >= date + 86400
-      let date = org#time#dict(strftime('%Y-%m-%d', values(nearest)[0].start)).start
-      call add(all_text, strftime('%A, %Y-%m-%d', date))
-      let lnum += 1
+  let hllist = []
+  for section in g:org#agenda#views[a:name]
+    let title = type(section.title) == v:t_string ? section.title : section.title()
+    let files = has_key(section, 'files') ? section.files : org#agenda#files()
+    let items = []
+    for f in values(org#outline#multi(files))
+      call extend(items, f.list)
+    endfor
+    call filter(items, section.filter)
+    if has_key(section, 'sorter')
+      call sort(items)
     endif
-    let lnum += 1
-    let links[lnum] = hl
-    let fname = fnamemodify(hl.filename, ':t')
-    let text = repeat(' ', fname_width - len(fname)) . fname
-    let nearest = org#plan#nearest(hl.plan, today, 1)
-    let time = strftime('%R', values(nearest)[0].start)
-    let text .= repeat(' ', time_width - len(time)) . time . '...'
-    " let plan = empty(nearest) ? '---' : keys(nearest)[0] . ':'
-    " let text .= repeat(' ', plan_width - len(plan)) . plan
-    let text .= ' ' . hl.keyword . ' ' .  hl.item
-    call add(all_text, text)
+
+    let just = get(section, 'justify', [])
+
+    if get(section, 'display', 'block') == 'block'  " defaults to block
+      let hls = s:display_section(section.title, items, {})
+    elseif section.display == 'datetime'
+      let display = {'func': function('s:datetime_func'), 'preproc': function('s:datetime_preproc')}
+      let hls = s:display_section(section.title, items, display)
+    elseif type(section.display) == v:t_dict
+      let hls = s:display_section(section.title, items, section.display)
+    else
+      throw 'Org: no display type for ' . string(section.display)
+    endif
+
+    call extend(hllist, hls)
   endfor
+  " setlocal modifiable | 1d | setlocal nomodifiable
+  return hllist
+  " todo: mapclear & set up mappings
 
-  setlocal modifiable
-  call append('$', all_text)
-  setlocal nomodifiable
-
-  return links
 endfunction
 
-function! org#agenda#block(title, items) abort " {{{1
-  " Title
-  "   file:  Scheduled: NEXT do a thing
-  "   file:  Scheduled: TODO do a thing
+function! s:datetime_preproc(hl) abort dict " {{{1
+  if empty(self.cache)
+    let self.cache.date = -9999999999
+    let self.cache.today = org#time#dict('today')
+  endif
+
+  let nearest = org#plan#nearest(a:hl.plan, self.cache.today, 1)
+  if values(nearest)[0].start >= self.cache.date + 86400
+    let self.cache.date = org#time#dict(strftime('%Y-%m-%d', values(nearest)[0].start)).start
+    return [[strftime('%A, %Y-%m-%d', self.cache.date), 'orgAgendaDate']]
+  endif
+  return []
+endfunction
+
+" TODO :
+" highlight link orgAgendaTitle Statement
+" highlight link orgAgendaDate Function
+" highlight link orgAgendaFile Identifier
+" highlight link orgAgendaPlan Comment
+" highlight link orgAgendaKeyword Todo
+" highlight link orgAgendaHeadline Normal
+
+function! s:display_section(title, items, display) abort " {{{1
   if &filetype != 'agenda'
     throw 'Org: trying to display an agenda in a non-agenda buffer'
   endif
-  let today = org#time#dict('today')
-  let fname_width = max(map(copy(a:items), 'len(fnamemodify(v:val.filename, ":t"))')) + 2
-  let plan_width = 12
-  let all_text = empty(a:title) ? [] : [a:title]
-  for hl in a:items
-    let fname = fnamemodify(hl.filename, ':t')
-    let text = repeat(' ', fname_width - len(fname)) . fname
-    let nearest = org#plan#nearest(hl.plan, today, 1)
-    let plan = empty(nearest) ? '---' : keys(nearest)[0] . ':'
-    let text .= repeat(' ', plan_width - len(plan)) . plan
-    let text .= ' ' . hl.keyword . ' ' .  hl.item
-    call add(all_text, text)
+  let Get_textinfo = get(a:display, 'func', function('s:blockfunc'))
+  let text_info = map(copy(a:items), {_, hl -> Get_textinfo(hl)})
+  let preproc = has_key(a:display, 'preproc') ? {'cache': {}, 'func': a:display.preproc} : {}
+  " Calc. spacing
+  " Deepcopy so we don't modify the lists: [['Txt'], ['Name']] 'Txt' would be changed to a number.
+  let widths = map(deepcopy(text_info), {_, hl -> map(hl[0], "len(v:val)")})
+  let cols = len(text_info[0][0])
+  let just = has_key(a:display, 'justify') ? a:display.justify : repeat(['l'], cols - 2) + ['', '']
+  if len(just) != cols
+    throw 'Org: justification spec length must equal display function length'
+  endif
+  let colwidth = []
+  for ix in range(cols)
+    let width = empty(just[ix]) ? 0 : 1 + max(map(copy(widths), 'v:val[ix]'))
+    call add(colwidth, width)
+  endfor
+
+  " Display, highlight, and associate headlines with lnums in agenda
+  let lnum = line('$') + 2
+  let all_text = [a:title]
+  let highlights = [['orgAgendaTitle', [lnum - 1]]]
+  let b:to_hl = get(b:, 'to_hl', {})
+  for jx in range(len(a:items))
+    let [text, hlgroups, hl] = [text_info[jx][0], text_info[jx][1], a:items[jx]]
+    let b:to_hl[lnum] = g:org#agenda#jump . ' ' . hl.filename . '|' . lnum
+
+    " Calculate preproc lines, for separators, etc
+    if !empty(preproc)
+      " TODO list of lists
+      let lines = preproc.func(hl)
+      for [txt, groupname] in lines
+        call add(all_text, txt)
+        call add(highlights, [groupname, [lnum]])
+        let lnum += 1
+      endfor
+    endif
+
+    " Calculate justification, if any, and column for highlighting
+    let txt = '  '
+    for ix in range(cols)
+      let spacing = colwidth[ix] - len(text[ix])
+      if just[ix] == 'l'
+        if txt[len(txt) - 1] != ' '
+          let txt .= ' '
+        endif
+        let col = len(txt)
+        let txt .= text[ix] . repeat(' ', spacing)
+      elseif just[ix] == 'r'
+        let txt .= repeat(' ', spacing)
+        let col = len(txt)
+        let txt .= text[ix]
+      elseif just[ix] == 'c'
+        let txt .= repeat(' ', spacing / 2)
+        let col = len(txt)
+        let txt .= text[ix] . repeat(' ', spacing / 2)
+      elseif len(text[ix]) == 0  " not justified, and no text = skip it
+        continue
+      else
+        if txt[len(txt) - 1] != ' '
+          let txt .= ' '
+        endif
+        let col = len(txt)
+        let txt .= text[ix]
+      endif
+      call add(highlights, [hlgroups[ix], [[lnum, col + 1, strlen(text[ix])]]])
+    endfor
+
+    call add(all_text, substitute(txt, ' \+$', '', ''))
+    let lnum += 1
+
   endfor
   setlocal modifiable
   call append('$', all_text)
   setlocal nomodifiable
+  return map(highlights, 'matchaddpos(v:val[0], v:val[1])')
 endfunction
 
-function! s:get_block_text(hl, today) abort " {{{1
-  " \ 'keyword': empty(a:hl.done) ? a:hl.todo : a:hl.done,
-  return {'filename': fnamemodify(a:hl.filename, ':t'),
-        \ 'plan': org#plan#nearest(a:hl.plan, a:today, 1),
-        \ 'keyword': a:hl.keyword,
-        \ 'item': a:hl.item,
-        \ 'tags': a:hl.tags}
+function! s:blockfunc(hl) abort " {{{1
+  let nearest = org#plan#nearest(a:hl.plan, org#time#dict('today'), 1)
+  let plan = empty(nearest) ? '---' : keys(nearest)[0] . ':'
+  if empty(nearest)
+    let plan = '---'
+  else
+    let [name, time] = items(nearest)[0]
+    let plan = (name =~# '^T' ? '' : name[0] . ':') . time.totext('dTR')
+  endif
+  return [
+        \ [fnamemodify(a:hl.filename, ':t') . ':', plan, a:hl.keyword, a:hl.item],
+        \ ['orgAgendaFile', 'orgAgendaPlan', 'orgAgendaKeyword', 'orgAgendaHeadline'],
+        \ ]
+endfunction
+
+function! s:datetime_func(hl) abort " {{{1
+  let time = strftime('%R', values(org#plan#nearest(a:hl.plan, org#plan#nearest(a:hl.plan, org#time#dict('today'), 1), 1))[0].start)
+  let time = (time == '00:00' ? '' : time) . '...'
+  return [
+        \ [fnamemodify(a:hl.filename, ':t') . ':', time, a:hl.keyword, a:hl.item],
+        \ ['orgAgendaFile', 'orgAgendaPlan', 'orgAgendaKeyword', 'orgAgendaHeadline'],
+        \ ]
 endfunction
 
 function! org#agenda#toqf(agenda) abort " {{{1
