@@ -15,25 +15,19 @@ function! org#plan#diff(p1, p2, ...) abort " {{{1
   let tcmp = get(a:, 1, localtime())
 endfunction
 
-function! org#plan#islate(ts, ...) abort " {{{1
+function! org#plan#islate(plan, ...) abort " {{{1
   " Not late if no planning! True if time/schedule/deadline is in the past, schedule must
   " be farther than g:org#timestamp#scheduled#time away
   let tcmp = get(a:, 1, localtime())
-  let tdiff = {}
-  for plan in ['TIMESTAMP', 'SCHEDULED', 'DEADLINE']
-    if !empty(a:ts[plan])
-      let tdiff[plan] = org#time#diff(tcmp, a:ts[plan])
-    endif
-  endfor
-  if empty(tdiff)
-    return 0
-  endif
-  return !org#plan#isplanned(a:ts, tcmp)
+  return len(filter(copy(a:plan), 'v:key != "CLOSED"')) > 0 ? !org#plan#isplanned(a:plan, tcmp) : 0
 endfunction
 
-function! org#plan#isplanned(ts, ...) abort " {{{1
+function! org#plan#isplanned(plan, ...) abort " {{{1
   let tcmp = get(a:, 1, localtime())
-  for [plan, time] in items(a:ts)
+  if has_key(a:plan, 'CLOSED')
+    return 0
+  endif
+  for [plan, time] in items(a:plan)
     if org#time#diff(time, tcmp) >= 0
       return 1
     endif
@@ -41,31 +35,44 @@ function! org#plan#isplanned(ts, ...) abort " {{{1
   return 0
 endfunction
 
-function! org#plan#issoon(ts, ...) abort " {{{1
+function! org#plan#issoon(plan, ...) abort " {{{1
   " Yes if today is the timestamp, within schedule range, or within the deadline range
   let tcmp = get(a:, 1, localtime())
-  return !empty(org#plan#nearest(tcmp, ts))
+  " TODO should these use org#time#dict?
+  return !empty(org#plan#nearest(tcmp, a:plan))
 endfunction
 
-function! org#plan#nearest(ts, ...) abort " {{{1
+function! org#plan#within(plan, t1, ...) abort " {{{1
+  " Yes if today is the timestamp, within schedule range, or within the deadline range
+  if exists('a:1')
+    let tcmp = org#time#dict(a:t1)
+    let tcmp.end = org#time#dict(a:1).start
+  else
+    " TODO should 'today' depend on the range provided? or just be 'now'? variable?
+    let tcmp = org#time#dict('today')
+    let tcmp.end = org#time#dict(a:t1).start
+  endif
+  return !empty(org#plan#nearest(a:plan, tcmp))
+endfunction
+
+function! org#plan#nearest(plan, ...) abort " {{{1
   " Allows to compute which happened first and by how far.
   " t1 should be a float, t2 should be a timestamp dict
-  " Assumes one of the three exists
   let tcmp = get(a:, 1, localtime())
   let retplan = get(a:, 2, 0)
-  if empty(a:ts) || has_key(a:ts, 'CLOSED')
+  if empty(a:plan) || has_key(a:plan, 'CLOSED')
     return {}
-  elseif len(a:ts) == 1
-    return retplan ? copy(a:ts) : values(a:ts)[0]
+  elseif len(a:plan) == 1
+    return retplan ? copy(a:plan) : values(a:plan)[0]
   endif
-  let tdiff = map(copy(a:ts), org#time#diff(tcmp, v:val))
+  let tdiff = map(copy(a:plan), org#time#diff(tcmp, v:val))
 
   if has_key(tdiff, 'TIMESTAMP') >= 0 && tdiff.TIMESTAMP <= s:p.d
-    return retplan ? {'TIMESTAMP': a:ts.TIMESTAMP} : a:ts.TIMESTAMP
+    return retplan ? {'TIMESTAMP': a:plan.TIMESTAMP} : a:plan.TIMESTAMP
   elseif has_key(tdiff, 'DEADLINE') <= 0 && tdiff.DEADLINE >= -s:p.d * g:org#timestamp#deadline#time
-    return retplan ? {'DEADLINE': a:ts.DEADLINE} : a:ts.DEADLINE
+    return retplan ? {'DEADLINE': a:plan.DEADLINE} : a:plan.DEADLINE
   elseif has_key(tdiff, 'SCHEDULED') >= 0 && tdiff.SCHEDULED <= s:p.d * g:org#timestamp#scheduled#time
-    return retplan ? {'SCHEDULED': a:ts.SCHEDULED} : a:ts.SCHEDULED
+    return retplan ? {'SCHEDULED': a:plan.SCHEDULED} : a:plan.SCHEDULED
   endif
   return retname ? '' : {} " unplanned w.r.t now
 endfunction
