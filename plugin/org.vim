@@ -142,9 +142,44 @@ xnoremap <silent> <Plug>(org-capture) :call org#capture()<Cr>
 
 " Autocmds & Cmds {{{1
 
+function! s:markdone() abort
+  " Meant to be called in an autocmd orgkeyworddone
+  let plan = org#plan#get('.')
+  if empty(plan)
+    return
+  endif
+  let repeat = empty(filter(values(plan), 'empty(v:val.repeater)'))
+  for [kind, time] in items(plan)
+    if repeat
+      if !empty(time.repeater)
+        let plan[kind] = org#time#modify(time, time.repeater)
+      endif
+    else
+      let plan[kind].active = 0
+    endif
+  endfor
+  call setline(org#headline#at('.') + 1, org#plan#totext(plan))
+  if repeat
+    call org#keyword#set(g:org#keyword#old)
+  endif
+endfunction
+
+function! s:marktodo() abort
+  let plan = org#plan#get('.')
+  if empty(plan)
+    return
+  endif
+  for kind in keys(plan)
+    let plan[kind].active = a:active
+  endfor
+  call setline(org#headline#at('.') + 1, org#plan#totext(plan))
+endfunction
+
 augroup org_keywords
   autocmd!
-  autocmd BufWinEnter,BufWritePost *.org call org#outline#keywords()
+  autocmd User OrgKeywordDone call s:markdone()
+  autocmd User OrgKeywordToDo call s:marktodo()
+  autocmd BufEnter,BufWritePost *.org call org#outline#keywords()
 augroup END
 
 augroup org_completion
