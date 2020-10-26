@@ -58,10 +58,6 @@ endfunction
 let g:org#agenda#wincmd = get(g:, 'org#agenda#wincmd', 'keepalt topleft vsplit')
 let g:org#agenda#jump = get(g:, 'org#agenda#jump', 'edit')
 
-" augroup org_agenda
-"   autocmd!
-" augroup END
-
 " Step 1: date and block display
 " step 2: customizable 'state' function, between file: headline
 
@@ -78,11 +74,12 @@ function! org#agenda#build(name) abort " {{{1
   if type(g:org#agenda#wincmd) == v:t_func
     call g:org#agenda#wincmd(bufname)
   else
-    execute g:org#agenda#wincmd bufname
+    execute 'keepalt' g:org#agenda#wincmd bufname
   endif
   setfiletype agenda
   nnoremap <buffer> q :q<Cr>
-  " nnoremap <buffer> <Cr> :if has_key(b:to_hl, line('.')) | execute b:to_hl[line('.')] | echoerr 'Org: not on a headline'<Cr>
+  nnoremap <buffer> <Cr> :call <SID>jump()<Cr>
+  autocmd org_agenda BufWinLeave <buffer> call clearmatches()
 
   let hllist = []
   for section in g:org#agenda#views[a:name]
@@ -94,17 +91,20 @@ function! org#agenda#build(name) abort " {{{1
     endfor
     call filter(items, section.filter)
     if has_key(section, 'sorter')
-      call sort(items)
+      call sort(items, section.sorter)
     endif
 
     let just = get(section, 'justify', [])
 
     if get(section, 'display', 'block') == 'block'  " defaults to block
-      let hls = s:display_section(section.title, items, {})
+      let hls = s:display_section(section.title, items, {'func': function('s:block_func')})
     elseif section.display == 'datetime'
-      let display = {'func': function('s:datetime_func'), 'preproc': function('s:datetime_preproc')}
+      let display = {'func': function('s:datetime_func'), 'separator': function('s:datetime_separator')}
       let hls = s:display_section(section.title, items, display)
     elseif type(section.display) == v:t_dict
+      if section.display.func == 'block' || section.display.func == 'datetime'
+        let section.display.func = function('s:' . section.display.func . '_func')
+      endif
       let hls = s:display_section(section.title, items, section.display)
     else
       throw 'Org: no display type for ' . string(section.display)
@@ -115,10 +115,21 @@ function! org#agenda#build(name) abort " {{{1
   " setlocal modifiable | 1d | setlocal nomodifiable
   return hllist
   " todo: mapclear & set up mappings
-
 endfunction
 
-function! s:datetime_preproc(hl) abort dict " {{{1
+
+function! s:jump() abort " {{{1
+  if !has_key(b:to_hl, line('.'))
+    echohl Error | echo 'No headline associated with line ' . line('.') | echohl None
+  endif
+
+  execute g:org#agenda#jump b:to_hl[line('.')].filename .'|'. b:to_hl[line('.')].lnum
+  if empty(&filetype)
+    setfiletype org
+  endif
+endfunction
+
+function! s:datetime_separator(hl) abort dict " {{{1
   if empty(self.cache)
     let self.cache.date = -9999999999
     let self.cache.today = org#time#dict('today')
@@ -144,9 +155,12 @@ function! s:display_section(title, items, display) abort " {{{1
   if &filetype != 'agenda'
     throw 'Org: trying to display an agenda in a non-agenda buffer'
   endif
-  let Get_textinfo = get(a:display, 'func', function('s:blockfunc'))
+  if len(a:items) == 0
+    return [[a:title], ['orgAgendaTitle']]
+  endif
+  let Get_textinfo = get(a:display, 'func', function('s:block_func'))
   let text_info = map(copy(a:items), {_, hl -> Get_textinfo(hl)})
-  let preproc = has_key(a:display, 'preproc') ? {'cache': {}, 'func': a:display.preproc} : {}
+  let separator = has_key(a:display, 'separator') ? {'cache': {}, 'func': a:display.separator} : {}
   " Calc. spacing
   " Deepcopy so we don't modify the lists: [['Txt'], ['Name']] 'Txt' would be changed to a number.
   let widths = map(deepcopy(text_info), {_, hl -> map(hl[0], "len(v:val)")})
@@ -168,18 +182,20 @@ function! s:display_section(title, items, display) abort " {{{1
   let b:to_hl = get(b:, 'to_hl', {})
   for jx in range(len(a:items))
     let [text, hlgroups, hl] = [text_info[jx][0], text_info[jx][1], a:items[jx]]
-    let b:to_hl[lnum] = g:org#agenda#jump . ' ' . hl.filename . '|' . lnum
 
-    " Calculate preproc lines, for separators, etc
-    if !empty(preproc)
+    " Calculate separator lines
+    if !empty(separator)
       " TODO list of lists
-      let lines = preproc.func(hl)
+      let lines = separator.func(hl)
       for [txt, groupname] in lines
         call add(all_text, txt)
         call add(highlights, [groupname, [lnum]])
         let lnum += 1
       endfor
     endif
+
+    " Register headline to a line number for <Plug>(org-agenda-goto-headline)
+    let b:to_hl[lnum] = {'filename': hl.filename, 'lnum': hl.lnum}
 
     " Calculate justification, if any, and column for highlighting
     let txt = '  '
@@ -221,7 +237,7 @@ function! s:display_section(title, items, display) abort " {{{1
   return map(highlights, 'matchaddpos(v:val[0], v:val[1])')
 endfunction
 
-function! s:blockfunc(hl) abort " {{{1
+function! s:block_func(hl) abort " {{{1
   let nearest = org#plan#nearest(a:hl.plan, org#time#dict('today'), 1)
   let plan = empty(nearest) ? '---' : keys(nearest)[0] . ':'
   if empty(nearest)
@@ -274,5 +290,4 @@ function! org#agenda#todo() abort " {{{1
   call sort(agenda, org#util#seqsortfunc(['FILE', 'LNUM']))
   return agenda
 endfunction
-
 

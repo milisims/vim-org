@@ -187,6 +187,10 @@ augroup org_completion
   autocmd!
 augroup END
 
+augroup org_agenda
+  autocmd!
+augroup END
+
 command! -nargs=? Capture call org#capture('c')
 
 " TODO:
