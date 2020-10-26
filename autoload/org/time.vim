@@ -186,6 +186,19 @@ function! s:text2ftimerange(date, ...) abort " {{{1
   return [[start, end], repdel]
 endfunction
 
+function! org#time#modify(time, mod) abort " {{{1 RENAME
+  " time dict or string, then modify it
+  let time = type(a:time) == v:t_dict ? a:time : org#time#dict(a:time)
+  if type(a:mod) == v:t_string
+    let a:mod = 1
+  endif
+  let [n, t] = matchlist(a:mod, g:org#regex#timestamp#relative)[1:2]
+  let dt = s:p[t] * str2nr(n)
+  let time.start += dt
+  let time.end += dt
+  return time
+endfunction
+
 function! s:dict_from_ftime(ftime, ...) abort " {{{1
   " Defaults : active: 1, repeater: '', delay '', text ftime2date(start)
   let [start, end] = type(a:ftime) == v:t_list ? a:ftime : [a:ftime, a:ftime]
