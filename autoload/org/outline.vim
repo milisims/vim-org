@@ -19,9 +19,7 @@ function! org#outline#complete(arglead, cmdline, curpos) abort " {{{1
       throw 'Org: elements of g:org#outline#complete#targets must be outline dicts or target strings'
     endif
     let g:org#outline#complete#cache = sort(targets)
-    autocmd org_completion CmdlineLeave,CompleteDone,InsertEnter * ++once unlet! g:org#outline#complete#cache
-    autocmd org_completion CmdlineLeave,CompleteDone,InsertEnter * ++once unlet! g:org#outline#complete#filter
-    autocmd org_completion CmdlineLeave,CompleteDone,InsertEnter * ++once unlet! g:org#outline#complete#targets
+    autocmd org_completion CmdlineLeave,CompleteDone,InsertEnter * ++once unlet! g:org#outline#complete#cache g:org#outline#complete#filter g:org#outline#complete#targets
   endif
   if !empty(a:arglead)
     " TODO Not sure if I want to keep this filter
