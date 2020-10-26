@@ -159,3 +159,13 @@ function! org#plan#fromtext(text) abort " {{{1
   endfor
   return plan
 endfunction
+
+function! org#plan#totext(plan) abort " {{{1
+  let text = has_key(a:plan, 'TIMESTAMP') ? [a:plan.TIMESTAMP.totext()] : []
+  for kind in ['SCHEDULED', 'DEADLINE', 'CLOSED']
+    if has_key(a:plan, kind)
+      call add(text, kind . ': ' . a:plan[kind].totext())
+    endif
+  endfor
+  return join(text)
+endfunction
