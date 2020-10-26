@@ -39,20 +39,25 @@ function! org#plan#issoon(plan, ...) abort " {{{1
   " Yes if today is the timestamp, within schedule range, or within the deadline range
   let tcmp = get(a:, 1, localtime())
   " TODO should these use org#time#dict?
-  return !empty(org#plan#nearest(tcmp, a:plan))
+  return !empty(org#plan#nearest(a:plan, tcmp))
 endfunction
 
 function! org#plan#within(plan, t1, ...) abort " {{{1
   " Yes if today is the timestamp, within schedule range, or within the deadline range
   if exists('a:1')
     let tcmp = org#time#dict(a:t1)
-    let tcmp.end = org#time#dict(a:1).start
+    let tcmp.end = org#time#dict(a:1).end
   else
     " TODO should 'today' depend on the range provided? or just be 'now'? variable?
     let tcmp = org#time#dict('today')
-    let tcmp.end = org#time#dict(a:t1).start
+    let tcmp.end = org#time#dict(a:t1).end
   endif
-  return !empty(org#plan#nearest(a:plan, tcmp))
+  let nearest = org#plan#nearest(a:plan, tcmp)
+  if empty(nearest) || !nearest.active
+    return 0
+  endif
+  let tdiff = org#time#diff(nearest, tcmp)
+  return tdiff == 0 || (tcmp.start == tcmp.end && 0 < tdiff && tdiff < 86400)
 endfunction
 
 function! org#plan#nearest(plan, ...) abort " {{{1
@@ -65,7 +70,7 @@ function! org#plan#nearest(plan, ...) abort " {{{1
   elseif len(a:plan) == 1
     return retplan ? copy(a:plan) : values(a:plan)[0]
   endif
-  let tdiff = map(copy(a:plan), org#time#diff(tcmp, v:val))
+  let tdiff = map(copy(a:plan), 'org#time#diff(tcmp, v:val)')
 
   if has_key(tdiff, 'TIMESTAMP') >= 0 && tdiff.TIMESTAMP <= s:p.d
     return retplan ? {'TIMESTAMP': a:plan.TIMESTAMP} : a:plan.TIMESTAMP
@@ -146,7 +151,7 @@ function! org#plan#fromtext(text) abort " {{{1
     else
       let time = org#time#dict(item)
       let plan[kind] = time
-      if time.active && (kind != 'CLOSED')
+      if time.active && kind == 'CLOSED'
         let plan[kind].active = 0
       endif
       let kind = 'TIMESTAMP'
