@@ -182,15 +182,24 @@ function! s:subtree(lnum, ...) abort " {{{1
 endfunction
 
 function! s:to_tree(hls) abort " {{{1
+  if empty(a:hls)
+    return []
+  endif
   let current_tree = [[{'level': 0}, []]] " a subtree is [hl, list of subtrees]
+  let current_target = []
+  let fname = fnameescape(a:hls[0].filename)
+  let fname = substitute(fname, '^' . fnameescape(org#dir()) . '/', '', '')
   for hl in a:hls
     " Find the parent of the current headline. level: 0 above is the whole document.
     while hl.level <= current_tree[-1][0].level
       call remove(current_tree, -1)
+      call remove(current_target, -1)
     endwhile
     let st = [hl, []]
     call add(current_tree[-1][1], st)
     call add(current_tree, st)
+    call add(current_target, hl.item)
+    let hl.target = fname . '/' . join(current_target, '/')  " TODO escaping?
   endfor
   return current_tree[0][1]
 endfunction
