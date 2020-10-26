@@ -23,8 +23,8 @@ function! org#headline#addtag(tag) abort " {{{1
 endfunction
 
 function! org#headline#gettags(lnum) abort " {{{1
-  let lnum = org#headline#at(lnum)
-  return org#headline#parse(getline(lnum)).tags
+  let lnum = org#headline#at(a:lnum)
+  return org#headline#parse(getline(a:lnum)).tags
 endfunction
 
 function! org#headline#astarget(expr) abort " {{{1
