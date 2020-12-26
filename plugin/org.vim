@@ -151,9 +151,7 @@ function! s:markdone() abort
   let repeat = empty(filter(values(plan), 'empty(v:val.repeater)'))
   for [kind, time] in items(plan)
     if repeat
-      if !empty(time.repeater)
-        let plan[kind] = org#time#modify(time, time.repeater)
-      endif
+      let plan[kind] = org#time#repeat(time)
     else
       let plan[kind].active = 0
     endif
@@ -166,11 +164,13 @@ endfunction
 
 function! s:marktodo() abort
   let plan = org#plan#get('.')
-  if empty(plan)
+  if empty(plan)  " Otherwise, will set line
     return
   endif
   for kind in keys(plan)
-    let plan[kind].active = a:active
+    if kind != 'CLOSED'
+      let plan[kind].active = 1
+    endif
   endfor
   call setline(org#headline#at('.') + 1, org#plan#totext(plan))
 endfunction
