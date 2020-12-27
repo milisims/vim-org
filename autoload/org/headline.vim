@@ -97,7 +97,7 @@ function! org#headline#fromtarget(target, ...) abort " {{{1
   if type(a:target) == v:t_string
     let fspl = split(a:target, '\.org\zs/')
     if len(fspl) == 1
-      let fname = resolve(fnamemodify(a:target[0] == '/' ? a:target : org#dir() . '/' . a:target, ':p'))
+      let fname = org#util#fname(a:target)
       return {'filename': fname, 'lnum': 0, 'bufnr': bufnr(fname)}
     endif
     let [fname, headlines] = fspl
@@ -107,8 +107,7 @@ function! org#headline#fromtarget(target, ...) abort " {{{1
   else
     throw "Org: target must be str or list"
   endif
-  let fname = resolve(fnamemodify(fname[0] == '/' ? fname : org#dir() . '/' . fname, ':p'))
-  let startbufnr = bufnr()
+  let fname = org#util#fname(fname)
   " FIXME use regexes from the regex source
   let [prefix, suffix] = ['\v^\*+\s*\w*\s+', '\v\s*(:%([[:alpha:]_@#%]+:)+)?\s*$']
   try
@@ -145,7 +144,7 @@ function! org#headline#get(lnum, ...) abort " {{{1
   let lnum = org#headline#at(a:lnum)
   let info = org#headline#parse(getline(lnum), keywords)
   " :h tag-function: name, filename, cmd, kind, user_data?
-  let info.filename = resolve(fnamemodify(bufname(), ':p'))
+  let info.filename = fnamemodify(bufname(), ':p')
   let info.bufnr = bufnr()
   let info.lnum = lnum
   let info.plan = org#plan#get(lnum)

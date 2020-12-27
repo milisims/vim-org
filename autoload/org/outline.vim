@@ -53,7 +53,7 @@ function! org#outline#file(expr, ...) abort " {{{1
   endif
 
   let fsummary = {'mtime': mtime, 'kwmtime': mtime, 'keywords': {'todo': [], 'done': []}, 'subtrees': [], 'lnums': {}}
-  let shortname = substitute(fname, resolve(fnamemodify(org#dir(), ':p')) . '/\?', '', '')
+  " let shortname = substitute(fname, fnamemodify(org#dir(), ':p') . '/\?', '', '')
 
   let starttabnr = tabpagenr()
   execute 'noautocmd $tab split' fname

@@ -109,7 +109,7 @@ function! org#capture#get_target(template) abort " {{{1
   elseif type(a:template.target) == v:t_list
     return a:template.target
   elseif type(a:template.target) == v:t_dict
-    let bufn = resolve(fnamemodify(a:template.target.filename, ':p'))
+    let bufn = fnamemodify(a:template.target.filename, ':p')
     if has_key(a:template.target, 'regex')
     elseif has_key(a:template.target, 'target')
     endif
