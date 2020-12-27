@@ -39,7 +39,7 @@ function! org#daily() abort " {{{1
 endfunction
 
 function! org#dir() abort " {{{1
-  return resolve(fnamemodify(get(b:, 'org_dir', get(g:, 'org#dir', '~/org')), ':p'))
+  return fnamemodify(get(b:, 'org_dir', get(g:, 'org#dir', '~/org')), ':p')
 endfunction
 
 function! org#format() abort " {{{1
@@ -122,21 +122,10 @@ function! org#refile(destination) abort " {{{1
   " Does not distinguish between two identical headlines.
   " TODO? define behavior for a/b/c? or require.org ?
 
-  " TODO remove this
-  let src = exists('a:1') ? a:destination : '.'
-  let dest = exists('a:1') ? a:1 : a:destination
+  let [src, dest] = ['.', a:destination]
+  let src = org#headline#get(org#headline#at(line('.')))
+  let dest = org#headline#fromtarget(a:destination)
 
-  if line(src) > 0
-    let src = org#headline#get(org#headline#at(line(src)))
-  elseif type(src) == v:t_string
-    let src = org#headline#fromtarget(src)
-  endif
-
-  if type(dest) == v:t_string
-    let dest = org#headline#fromtarget(dest)
-  elseif type(dest) == v:t_string
-    let dest = org#headline#get(dest)
-  endif
   let [g:org#refile#source, g:org#refile#destination] = [src, dest]
   doautocmd User OrgRefilePre
 

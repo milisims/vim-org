@@ -28,6 +28,8 @@ endfunction
 function! s:headline_text() abort " {{{1
   " TODO use org#agenda (rename to org#tree?)
   let [maintext, tagstr] = matchlist(getline(v:foldstart), '\v^(\*+.{-})\s*(:%([[:alpha:]_@#%]+:)+)?\s*$')[1:2]
+  let level = matchend(maintext, '^\**')
+  let maintext = repeat('-', level - 1) . maintext[level - 1 :]
   let linestr = ' ' . (1 + v:foldend - v:foldstart) . ' lines '
   let linestr_len = max([strwidth(linestr) + 1, 10])
   let linestr_spacing = repeat(' ', linestr_len - strwidth(linestr))

@@ -58,10 +58,19 @@ endfunction
 let g:org#agenda#wincmd = get(g:, 'org#agenda#wincmd', 'keepalt topleft vsplit')
 let g:org#agenda#jump = get(g:, 'org#agenda#jump', 'edit')
 
-" Step 1: date and block display
-" step 2: customizable 'state' function, between file: headline
-
 " TODO display format, like stl? %f -> filename, %t -> time, %p plan, etc.
+
+" 1. define syntax region for the section
+" 2. match: filename, schedule, etc. any key in a headline item
+"    - Properties & tags handeled specially
+"    - Support default values if empty?
+" 3. separator?
+
+" 1. Register syntax into syntax region
+" 2. Calculate text for each item & separators.
+" Separator syntax should have matches as well
+
+" User says:
 
 function! org#agenda#build(name) abort " {{{1
   if !has_key(g:org#agenda#views, a:name)
@@ -77,18 +86,24 @@ function! org#agenda#build(name) abort " {{{1
     execute 'keepalt' g:org#agenda#wincmd bufname
   endif
   setfiletype agenda
-  nnoremap <buffer> q :q<Cr>
-  nnoremap <buffer> <Cr> :call <SID>jump()<Cr>
+  let b:agenda_name = a:name
+  nnoremap <buffer> <Plug>(org-agenda-goto-headline) :call <SID>jump()<Cr>
   autocmd org_agenda BufWinLeave <buffer> call clearmatches()
+
+  doautocmd User OrgAgendaBuildPre
 
   let hllist = []
   for section in g:org#agenda#views[a:name]
     let title = type(section.title) == v:t_string ? section.title : section.title()
-    let files = has_key(section, 'files') ? section.files : org#agenda#files()
-    let items = []
-    for f in values(org#outline#multi(files))
-      call extend(items, f.list)
-    endfor
+    if has_key(section, 'generator')
+      let items = function(section.generator)()
+    else
+      let files = has_key(section, 'files') ? section.files : org#agenda#files()
+      let items = []
+      for f in values(org#outline#multi(files))
+        call extend(items, f.list)
+      endfor
+    endif
     call filter(items, section.filter)
     if has_key(section, 'sorter')
       call sort(items, section.sorter)
@@ -96,19 +111,29 @@ function! org#agenda#build(name) abort " {{{1
 
     let just = get(section, 'justify', [])
 
-    if get(section, 'display', 'block') == 'block'  " defaults to block
-      let hls = s:display_section(section.title, items, {'func': function('s:block_func')})
-    elseif section.display == 'datetime'
-      let display = {'func': function('s:datetime_func'), 'separator': function('s:datetime_separator')}
-      let hls = s:display_section(section.title, items, display)
-    elseif type(section.display) == v:t_dict
-      if section.display.func == 'block' || section.display.func == 'datetime'
-        let section.display.func = function('s:' . section.display.func . '_func')
-      endif
-      let hls = s:display_section(section.title, items, section.display)
+    let Display = get(section, 'display', 'block')
+    if type(Display) == v:t_string && Display == 'block'
+      let Display = function('s:block_func')
+      let Separator = {}
+    elseif type(Display) == v:t_string && Display == 'datetime'
+      let Display = function('s:datetime_func')
+      let Separator = function('s:datetime_separator')
     else
-      throw 'Org: no display type for ' . string(section.display)
+      try
+        let Display = function(Display)
+      catch  " FIXME E700 ?
+        echoerr 'Org: display in agenda section "' . title . '" is not a function name or funcref.'
+      endtry
+      let Separator = {}
     endif
+    try
+      let Separator = has_key(section, 'separator') ? function(section.separator) : Separator
+    catch
+      echoerr 'Org: separator in agenda section "' . title . '" is not a function name or funcref.'
+    endtry
+
+    let justify = get(section, 'justify', [])
+    let hls = s:display_section(section.title, items, Display, Separator, justify)
 
     call extend(hllist, hls)
   endfor
@@ -151,21 +176,20 @@ endfunction
 " highlight link orgAgendaKeyword Todo
 " highlight link orgAgendaHeadline Normal
 
-function! s:display_section(title, items, display) abort " {{{1
+function! s:display_section(title, items, display, separator, justify) abort " {{{1
   if &filetype != 'agenda'
     throw 'Org: trying to display an agenda in a non-agenda buffer'
   endif
   if len(a:items) == 0
     return [[a:title], ['orgAgendaTitle']]
   endif
-  let Get_textinfo = get(a:display, 'func', function('s:block_func'))
-  let text_info = map(copy(a:items), {_, hl -> Get_textinfo(hl)})
-  let separator = has_key(a:display, 'separator') ? {'cache': {}, 'func': a:display.separator} : {}
+  let text_info = map(copy(a:items), {_, hl -> a:display(hl)})
+  let separator = type(a:separator) == v:t_func ? {'cache': {}, 'func': a:separator} : {}
   " Calc. spacing
   " Deepcopy so we don't modify the lists: [['Txt'], ['Name']] 'Txt' would be changed to a number.
   let widths = map(deepcopy(text_info), {_, hl -> map(hl[0], "len(v:val)")})
   let cols = len(text_info[0][0])
-  let just = has_key(a:display, 'justify') ? a:display.justify : repeat(['l'], cols - 2) + ['', '']
+  let just = !empty(a:justify) ? a:justify : repeat(['l'], cols - 2) + ['', '']
   if len(just) != cols
     throw 'Org: justification spec length must equal display function length'
   endif
@@ -194,8 +218,8 @@ function! s:display_section(title, items, display) abort " {{{1
       endfor
     endif
 
-    " Register headline to a line number for <Plug>(org-agenda-goto-headline)
-    let b:to_hl[lnum] = {'filename': hl.filename, 'lnum': hl.lnum}
+    " Register headline to a line number
+    let b:to_hl[lnum] = hl
 
     " Calculate justification, if any, and column for highlighting
     let txt = '  '

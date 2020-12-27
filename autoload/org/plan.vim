@@ -18,15 +18,14 @@ endfunction
 function! org#plan#islate(plan, ...) abort " {{{1
   " Not late if no planning! True if time/schedule/deadline is in the past, schedule must
   " be farther than g:org#timestamp#scheduled#time away
-  let tcmp = get(a:, 1, localtime())
-  return len(filter(copy(a:plan), 'v:key != "CLOSED"')) > 0 ? !org#plan#isplanned(a:plan, tcmp) : 0
+  return len(filter(copy(a:plan), 'v:key != "CLOSED"')) > 0 ? !org#plan#isplanned(a:plan) : 0
 endfunction
 
 function! org#plan#isplanned(plan, ...) abort " {{{1
-  let tcmp = get(a:, 1, localtime())
   if has_key(a:plan, 'CLOSED')
     return 0
   endif
+  let tcmp = exists('a:1') ? a:1 : org#time#dict('today').start
   for [plan, time] in items(a:plan)
     if org#time#diff(time, tcmp) >= 0
       return 1

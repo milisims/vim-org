@@ -10,6 +10,7 @@ function! org#headline#add(level, text, ...) abort " {{{1
   " If whitespace, just the whitespace. if text, space + text. If empty, no space.
   let text = empty(a:text) ? '' : (a:text =~? '\S' ? ' ' . a:text : a:text)
   call append('.', repeat('*', level) . text)
+  doautocmd User OrgHeadlineAdd
 endfunction
 
 function! org#headline#addtag(tag) abort " {{{1
@@ -101,7 +102,7 @@ function! org#headline#fromtarget(target, ...) abort " {{{1
       return {'filename': fname, 'lnum': 0, 'bufnr': bufnr(fname)}
     endif
     let [fname, headlines] = fspl
-    let headlines = split(headlines, '/')
+    let headlines = split(headlines, '[^\]/')
   elseif type(a:target) == v:t_list
     let [fname; headlines] = a:target
   else
@@ -111,10 +112,8 @@ function! org#headline#fromtarget(target, ...) abort " {{{1
   " FIXME use regexes from the regex source
   let [prefix, suffix] = ['\v^\*+\s*\w*\s+', '\v\s*(:%([[:alpha:]_@#%]+:)+)?\s*$']
   try
-    if startbufnr != bufnr(fname)
-      execute 'split' fname
-      let winnr = winnr()
-    endif
+    let starttabnr = tabpagenr()
+    execute 'noautocmd $tab split' fname
     let range = [0, line('$')]
     for ix in range(len(headlines))
       let lnum = org#util#search(range[0], prefix . headlines[ix] . suffix, 'nx', range[1])
@@ -127,9 +126,8 @@ function! org#headline#fromtarget(target, ...) abort " {{{1
     endfor
     let target = org#headline#get(lnum)
   finally
-    if startbufnr != bufnr()
-      execute winnr . 'wincmd c'
-    endif
+    quit
+    execute 'noautocmd normal!' starttabnr . 'gt'
   endtry
   return target
 endfunction
@@ -142,6 +140,7 @@ function! org#headline#get(lnum, ...) abort " {{{1
   " Get is not short circuited, but ternary expressions are.
   let keywords = exists('a:1') ? a:1 : org#outline#keywords()
   let lnum = org#headline#at(a:lnum)
+  " returns {'level', 'keyword', 'done', 'priority', 'item', 'text', 'tags'}
   let info = org#headline#parse(getline(lnum), keywords)
   " :h tag-function: name, filename, cmd, kind, user_data?
   let info.filename = fnamemodify(bufname(), ':p')
@@ -149,6 +148,7 @@ function! org#headline#get(lnum, ...) abort " {{{1
   let info.lnum = lnum
   let info.plan = org#plan#get(lnum)
   let info.properties = org#property#all(lnum)
+  let info.update = function('org#headline#update')
   return info
 endfunction
 
@@ -158,6 +158,59 @@ function! org#headline#level(lnum, ...) abort " {{{1
   let lnum = org#headline#find(lnum, 0, 'nbW')
   let headline_level = max([0, matchend(getline(lnum), '^\*\+')])
   return return_lnum ? [headline_level, lnum] : headline_level
+endfunction
+
+function! org#headline#update() abort dict " {{{1
+
+  let starttabnr = tabpagenr()
+  execute 'noautocmd $tab split' bufname(self.bufnr)
+
+  try
+    if has_key(self, 'target')
+      let old = org#headline#fromtarget(self.target) " will create one that doesn't exist
+      execute old.lnum
+    else
+      if getline(self.lnum) !~ '^\*'
+        throw 'Org: no headline found at line:' . self.lnum . "in updated headline: " . string(self)
+      endif
+      exe self.lnum
+      let old = org#headline#get('.')
+    endif
+
+    doautocmd User OrgHeadlineUpdatePre
+
+    " If statements on everything to not overwrite autocmd changes if they exist
+    if self.level != old.level  " TODO setlevel?
+      call setline('.', substitute(getline('.'), '^\*\+', repeat('*', self.level), ''))
+    endif
+    if self.keyword != old.keyword
+      call org#keyword#set(self.keyword)
+    endif
+    if self.item != old.item
+      call org#headline#set(self.item)
+    endif
+    if self.tags != old.tags
+      call org#headline#settag(self.tags)
+    endif
+    if !empty(self.priority)
+      throw 'Org: priority not yet implemented in org#headline#update'
+    endif
+
+    if self.plan != old.plan
+      call org#plan#set(self.plan)
+    endif
+    if self.properties != old.properties
+      call org#property#set(self.properties)
+    endif
+
+    doautocmd User OrgHeadlineFormat
+    doautocmd User OrgHeadlineUpdatePost
+
+  finally
+    quit
+    execute 'noautocmd normal!' starttabnr . 'gt'
+  endtry
+
 endfunction
 
 function! org#headline#parse(text, ...) abort " {{{1
@@ -194,8 +247,10 @@ function! org#headline#set(text) abort " {{{1
   call setline(lnum, substitute(getline(lnum), '\V' . escape(current, '\'), a:text, ''))
 endfunction
 
-function! org#headline#settag(tag) abort " {{{1
+function! org#headline#settag(tags) abort " {{{1
+  " List or string
   let lnum = org#headline#at('.')
-  call setline(lnum, substitute(getline(lnum), '\v\s?(:%([[:alnum:]_@#%]+:)+)?\s*$', ' :' . a:tag . ':', ''))
+  let tagtext = empty(a:tags) ? '' : (type(a:tags) == v:t_list ? join(a:tags, ':') : a:tags)
+  call setline(lnum, substitute(getline(lnum), '\v\s?(:%([[:alnum:]_@#%]+:)+)?\s*$', tagtext, ''))
 endfunction
 

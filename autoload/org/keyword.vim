@@ -37,7 +37,7 @@ function! org#keyword#set(kwd, ...) abort " {{{1
   " [force], [keywords]
   let keywords = exists('a:2') ? a:2 : org#outline#keywords()
   if !empty(a:kwd) && ! get(a:, 1, 0) && index(keywords.all, a:kwd) < 0
-    throw 'Org: ' . a:kwd . ' not in keywords: ' string(keywords.all)
+    throw 'Org: ' . a:kwd . ' not in keywords: ' . string(keywords.all)
   endif
   let lnum = line('.')
   if !org#headline#checktext(getline(lnum))
@@ -58,6 +58,7 @@ function! org#keyword#set(kwd, ...) abort " {{{1
   if !exists('g:org#keyword#old')
     let g:org#keyword#old = current
     let g:org#keyword#new = a:kwd
+    " TODO should this check for done -> done and keyword -> kw ??
     if index(keywords.done, a:kwd) >= 0
       doautocmd User OrgKeywordDone
     elseif !empty(a:kwd)

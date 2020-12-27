@@ -188,15 +188,49 @@ endfunction
 
 function! org#time#modify(time, mod) abort " {{{1 RENAME
   " time dict or string, then modify it
-  let time = type(a:time) == v:t_dict ? a:time : org#time#dict(a:time)
+  let time = type(a:time) == v:t_dict ? copy(a:time) : org#time#dict(a:time)
   if type(a:mod) == v:t_string
     let a:mod = 1
   endif
-  let [n, t] = matchlist(a:mod, g:org#regex#timestamp#relative)[1:2]
-  let dt = s:p[t] * str2nr(n)
-  let time.start += dt
-  let time.end += dt
+  " let [n, t] = matchlist(a:mod, g:org#regex#timestamp#relative)[1:2]
+  " let dt = s:p[t] * str2nr(n)
+  let time.start += a:mod
+  let time.end += a:mod
   return time
+endfunction
+
+function! org#time#repeat(time) abort " {{{1
+  let time = type(a:time) == v:t_dict ? copy(a:time) : org#time#dict(a:time)
+  if empty(time.repeater)
+    return time
+  endif
+  if time.repeater.type == '.+'  " .+1m marks the date to one month after 'today'
+    " TODO rather than localtime, use #dict('today') if appropriate, or otherwise include time of day
+    " Treat hour separately from w/d/m/y
+    let [time.start, time.end] = [localtime(), localtime() + time.end - time.start]
+    let time = org#time#modify(time, time.repeater.val . time.repeater.unit)
+  elseif time.repeater.type == '++'  " ++1m adds 1 month at a time until it is in the future
+    let now = localtime()
+    let time = org#time#modify(time, time.repeater.val)
+    while time.start < now
+      let time = org#time#modify(time, time.repeater.val)
+    endwhile
+  else " +1m adds one month
+    let time = org#time#modify(time, time.repeater.val)
+  endif
+  return time
+endfunction
+
+function! s:text2repdel() abort " {{{2
+  let repdel = {}
+  let rmatch = matchlist(repeat, g:org#regex#timestamp#repeater) " type, value, unit
+  if !empty(rmatch)
+    let repdel.repeater = {'type': rmatch[1], 'val': rmatch[2] * s:p[rmatch[3]], 'text': repeat}
+  endif
+  let dmatch = matchlist(delay, g:org#regex#timestamp#delay)
+  if !empty(dmatch)
+    let repdel.delay = {'type': dmatch[1], 'val': dmatch[2] * s:p[dmatch[3]], 'text': delay}
+  endif
 endfunction
 
 function! s:dict_from_ftime(ftime, ...) abort " {{{1
@@ -222,9 +256,14 @@ function! s:totext(...) abort dict " {{{1
         \ && strftime('%R', self.start) != '00:00'
         \ && strftime('%R', self.end) != '00:00')
   let day = opts =~# 'd' || opts !~# 'D'
+  let brackets = opts =~# 'b' || opts !~# 'B'
   let repeaterdelay = opts =~# 'r' || opts !~# 'R'
 
-  let [o, c] = ['[<'[self.active], ']>'[self.active]]
+  if brackets
+    let [o, c] = ['[<'[self.active], ']>'[self.active]]
+  else
+    let [o, c] = ['', '']
+  endif
 
   " If start & end are different, but the same day, we want [date %R-%R]"
   let timefmt = '%Y-%m-%d' . (day ? ' %a' : '') . (time ? ' %R' : '')

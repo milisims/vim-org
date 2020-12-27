@@ -35,10 +35,14 @@ endfunction
 function! org#property#set(props) abort " {{{1
   " TODO rename and redo makedrawer
   " FIXME Merge with #add
-  let rn = s:makedrawer()
-  if rn[1] - rn[0] > 1
-    execute rn[0] . ',' . rn[1] . 'd _'
+
+  let [dstart, dend] = org#property#drawer_range('.')
+  if dstart > 0
+    call deletebufline(bufnr(), dstart, dend)
   endif
+  let hl = org#headline#get('.')
+  let lnum = hl.lnum + !empty(hl.plan)
+
   let text = []
   for [name, val] in items(a:props)
     if name !~? '\v[[:alnum:]_-]+'
@@ -52,7 +56,8 @@ function! org#property#set(props) abort " {{{1
   endfor
   if len(text) > 0
     let text = [':PROPERTIES:'] + text + [':END:']
-    call append(rn[0], text)
+    echo lnum text
+    call append(lnum, text)
   endif
 endfunction
 

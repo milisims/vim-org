@@ -183,7 +183,7 @@ function! s:to_tree(hls) abort " {{{1
   if empty(a:hls)
     return []
   endif
-  let current_tree = [[{'level': 0}, []]] " a subtree is [hl, list of subtrees]
+  let current_tree = [[{'level': 0}, []]] " a tree is [hl, list of subtrees]
   let current_target = []
   let fname = fnameescape(a:hls[0].filename)
   let fname = substitute(fname, '^' . fnameescape(org#dir()) . '/', '', '')
