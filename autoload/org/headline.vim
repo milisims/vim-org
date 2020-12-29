@@ -102,15 +102,17 @@ function! org#headline#fromtarget(target, ...) abort " {{{1
       return {'filename': fname, 'lnum': 0, 'bufnr': bufnr(fname)}
     endif
     let [fname, headlines] = fspl
-    let headlines = split(headlines, '[^\]/')
+    " FIXME how do I deal with escapes?
+    let headlines = split(headlines, '\(\\\\\)*[^\\]\zs/')
   elseif type(a:target) == v:t_list
     let [fname; headlines] = a:target
   else
     throw "Org: target must be str or list"
   endif
+
   let fname = org#util#fname(fname)
   " FIXME use regexes from the regex source
-  let [prefix, suffix] = ['\v^\*+\s*\w*\s+', '\v\s*(:%([[:alpha:]_@#%]+:)+)?\s*$']
+  let [prefix, suffix] = ['\v^\*+\s*\w*\s+\V', '\v\s*(:%([[:alpha:]_@#%]+:)+)?\s*$']
   try
     let starttabnr = tabpagenr()
     execute 'noautocmd $tab split' fname
@@ -250,7 +252,7 @@ endfunction
 function! org#headline#settag(tags) abort " {{{1
   " List or string
   let lnum = org#headline#at('.')
-  let tagtext = empty(a:tags) ? '' : (type(a:tags) == v:t_list ? join(a:tags, ':') : a:tags)
+  let tagtext = empty(a:tags) ? '' : (type(a:tags) == v:t_list ? ' :'.join(a:tags, ':').':' : ' ' . a:tags)
   call setline(lnum, substitute(getline(lnum), '\v\s?(:%([[:alnum:]_@#%]+:)+)?\s*$', tagtext, ''))
 endfunction
 
