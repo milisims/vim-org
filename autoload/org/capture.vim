@@ -21,7 +21,8 @@
 let g:org#capture#defaults = {
       \ 'item': '`input("List item> ")`',
       \ 'checkitem': '`input("List item> ")`',
-      \ 'plain': '`input("Text> ")`'
+      \ 'plain': '`input("Text> ")`',
+      \ 'type': 'entry'
       \ }
 
 let g:org#capture#defaults.entry = [
@@ -49,22 +50,21 @@ function! org#capture#do(capture) abort " {{{1
   silent doautocmd User OrgCapturePre
   let target = org#capture#get_target(capture)
 
-  let template = get(capture, 'template', g:org#capture#defaults[capture.type])
+  let ctype = get(capture, 'type', g:org#capture#defaults.type)
+  let template = get(capture, 'template', g:org#capture#defaults[ctype])
   let text = org#capture#template2text(template)
 
   let layout = winlayout()
   " Check if it's open already?
-  messages clear
-  echom string(target)
   execute capture.opts.editcmd target.filename
 
-  if capture.type == 'entry'
+  if ctype == 'entry'
     let range = s:add_entry(target, text, capture.opts.prepend)
-  elseif capture.type == 'item'
+  elseif ctype == 'item'
     let range = s:add_item(target, text, capture.opts.prepend, 0)
-  elseif capture.type == 'checkitem'
+  elseif ctype == 'checkitem'
     let range = s:add_item(target, text, capture.opts.prepend, 1)
-  elseif capture.type == 'plain'
+  elseif ctype == 'plain'
     let range = s:add_plaintext(target, text, capture.opts.prepend)
   else
     throw "Org: Only capture types in [entry, item, checkitem, plain] are supported."
