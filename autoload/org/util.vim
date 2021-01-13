@@ -55,13 +55,5 @@ function! org#util#complete(arglead, cmdline, curpos) abort " {{{1
 endfunction
 
 function! org#util#fname(expr) abort " {{{1
-  " bufname -> relative file -> org#dir
-  if !empty(bufname(a:expr))
-    return fnamemodify(bufname(a:expr), ':p')
-  elseif filereadable(a:expr) || a:expr[0] =~ '[/~.]'
-    let bn = a:expr
-  else
-    let bn = bufname(bufadd(org#dir() . '/' . a:expr))
-  endif
-  return fnamemodify(bn, ':p')
+  return resolve(fnamemodify(a:expr, ':p'))
 endfunction
