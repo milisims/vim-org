@@ -248,10 +248,10 @@ hi link orgComment Comment
 
 "" }}}
 
-syn region orgBold      start=/\(\s\|^\)\zs\*[^ \t*]/ end=/[^ \t*]\*\ze\(\s\|$\)/ containedin=ALL contains=NONE
-syn region orgItalic    start=/\(\s\|^\)\zs\/[^ \t/]/ end=/[^ \t/]\/\ze\(\s\|$\)/ containedin=ALL contains=NONE
-syn region orgUnderline start=/\(\s\|^\)\zs_[^ \t_]/  end=/[^ \t_]_\ze\(\s\|$\)/  containedin=ALL contains=NONE
-syn region orgVerbatim  start=/\(\s\|^\)\zs=[^ \t=]/  end=/[^ \t=]=\ze\(\s\|$\)/  contains=NONE
+syn region orgBold      matchgroup=orgBoldEnds      start=/\(\s\|^\)\zs\*\ze[^ \t*]/ end=/[^ \t*]\zs\*\ze\(\W\|$\)/ containedin=ALL contains=NONE concealends oneline
+syn region orgItalic    matchgroup=orgItalicEnds    start=/\(\s\|^\)\zs\/\ze[^ \t/]/ end=/[^ \t/]\zs\/\ze\(\W\|$\)/ containedin=ALL contains=NONE concealends oneline
+syn region orgUnderline matchgroup=orgUnderlineEnds start=/\(\s\|^\)\zs_\ze[^ \t_]/  end=/[^ \t_]\zs_\ze\(\W\|$\)/  containedin=ALL contains=NONE concealends oneline
+syn region orgVerbatim  matchgroup=orgVerbatimEnds  start=/\(\s\|^\)\zs=\ze[^ \t=]/  end=/[^ \t=]\zs=\ze\(\W\|$\)/  contains=NONE   concealends oneline
 
 hi orgBold      cterm=bold      gui=bold
 hi orgItalic    cterm=italic    gui=italic
