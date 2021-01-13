@@ -209,11 +209,13 @@ function! s:display_section(title, items, display, separator, justify) abort " {
 
     " Calculate separator lines
     if !empty(separator)
-      " TODO list of lists
       let lines = separator.func(hl)
-      for [txt, groupname] in lines
+      for [txt, groupname; link] in lines
         call add(all_text, txt)
         call add(highlights, [groupname, [lnum]])
+        if !empty(link)
+          let b:to_hl[lnum] = link[0]
+        endif
         let lnum += 1
       endfor
     endif
