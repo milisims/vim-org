@@ -124,6 +124,24 @@ hi link orgPropertyName       Identifier
 syn sync match orgSyncPropertyDrawer grouphere orgPropertyDrawer /\v^(:PROPERTIES:$)@=/
 " syntax sync match orgSync grouphere orgSection /\v^%(\*+)@=/
 
+syn match orgLink '\[\[[^][]*\]\]' contains=orgLinkDescription
+syn match orgLink '\[\[[^][]*\]\[[^][]*\]\]' contains=orgURI,orgLinkDescription
+syn match orgLinkDescription '\[[^][]*\]' contained
+syn match orgURI '\[[^][]*\]' contained nextgroup=orgLinkDescription conceal
+
+hi link orgURI             Comment
+hi link orgLink            PreProc
+hi link orgLinkDescription Boolean
+
+syn region orgSetting matchgroup=orgSettingEnds start='^#+' end=':' nextgroup=orgSettingArguments contains=orgSettingName skipwhite oneline
+syn keyword orgSettingName contained TODO FILETAGS TITLE
+syn match orgSettingArguments '\S\+' contained nextgroup=orgSettingArguments skipwhite
+
+hi link orgSetting          Error
+hi link orgSettingEnds      Comment
+hi link orgSettingName      Todo
+hi link orgSettingArguments Comment
+
 " source block
 " #+BEGIN_SRC PARAMETERS
 " CONTENTS
