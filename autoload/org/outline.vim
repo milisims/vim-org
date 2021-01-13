@@ -159,8 +159,9 @@ function! s:update_keywords(bn) abort " {{{1
     call extend(todo, t)
     call extend(done, d)
   endfor
-  let keywords = {'todo': empty(todo) ? ['TODO'] : todo}
-  let keywords['done'] = empty(done) ? ['DONE'] : done
+  let defaults = get(g:, 'org#keywords', {'todo': ['TODO'], 'done': ['DONE']})
+  let keywords = {'todo': empty(todo) ? defaults.todo : todo}
+  let keywords['done'] = empty(done) ? defaults.done : done
   let keywords['all'] = keywords.todo + keywords.done
   return keywords
 endfunction
