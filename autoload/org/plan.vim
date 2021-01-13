@@ -162,6 +162,19 @@ function! org#plan#fromtext(text) abort " {{{1
   return plan
 endfunction
 
+function! org#plan#repeats(plan) abort " {{{1
+  " A closed plan does not repeat
+  if has_key(a:plan, 'CLOSED')
+    return 0
+  endif
+  for kind in ['SCHEDULED', 'DEADLINE', 'TIMESTAMP']
+    if has_key(a:plan, kind) && !empty(a:plan[kind].repeater)
+      return 1
+    endif
+  endfor
+  return 0
+endfunction
+
 function! org#plan#totext(plan) abort " {{{1
   let text = has_key(a:plan, 'TIMESTAMP') ? [a:plan.TIMESTAMP.totext()] : []
   for kind in ['SCHEDULED', 'DEADLINE', 'CLOSED']
