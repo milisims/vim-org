@@ -155,15 +155,15 @@ function! s:jump() abort " {{{1
 endfunction
 
 function! s:datetime_separator(hl) abort dict " {{{1
-  if empty(self.cache)
-    let self.cache.date = -9999999999
-    let self.cache.today = org#time#dict('today')
+  if !has_key(self, 'date')
+    let self.date = -9999999999
+    let self.today = org#time#dict('today')
   endif
 
-  let nearest = org#plan#nearest(a:hl.plan, self.cache.today, 1)
-  if values(nearest)[0].start >= self.cache.date + 86400
-    let self.cache.date = org#time#dict(strftime('%Y-%m-%d', values(nearest)[0].start)).start
-    return [[strftime('%A, %Y-%m-%d', self.cache.date), 'orgAgendaDate']]
+  let nearest = org#plan#nearest(a:hl.plan, self.today, 1)
+  if values(nearest)[0].start >= self.date + 86400
+    let self.date = org#time#dict(strftime('%Y-%m-%d', values(nearest)[0].start)).start
+    return [[strftime('%A, %Y-%m-%d', self.date), 'orgAgendaDate']]
   endif
   return []
 endfunction
@@ -184,7 +184,7 @@ function! s:display_section(title, items, display, separator, justify) abort " {
     return [[a:title], ['orgAgendaTitle']]
   endif
   let text_info = map(copy(a:items), {_, hl -> a:display(hl)})
-  let separator = type(a:separator) == v:t_func ? {'cache': {}, 'func': a:separator} : {}
+  let separator = type(a:separator) == v:t_func ? {'func': a:separator} : {}
   " Calc. spacing
   " Deepcopy so we don't modify the lists: [['Txt'], ['Name']] 'Txt' would be changed to a number.
   let widths = map(deepcopy(text_info), {_, hl -> map(hl[0], "len(v:val)")})
