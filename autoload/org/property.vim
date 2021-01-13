@@ -56,7 +56,6 @@ function! org#property#set(props) abort " {{{1
   endfor
   if len(text) > 0
     let text = [':PROPERTIES:'] + text + [':END:']
-    echo lnum text
     call append(lnum, text)
   endif
 endfunction
