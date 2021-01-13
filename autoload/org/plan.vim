@@ -28,7 +28,7 @@ function! org#plan#isplanned(plan, ...) abort " {{{1
   if has_key(a:plan, 'CLOSED')
     return 0
   endif
-  let tcmp = exists('a:1') ? a:1 : org#time#dict('today').start
+  let tcmp = exists('a:1') ? org#time#dict(a:1) : org#time#dict('today').start
   for [plan, time] in items(a:plan)
     if org#time#diff(time, tcmp) >= 0
       return 1
