@@ -45,8 +45,9 @@ syn match orgHeadlinePriority contained /\[#\a\]/ nextgroup=orgHeadlineText skip
 
 syn match orgHeadlineKeywords contained transparent /\u\+\ze\>/
       \ nextgroup=orgHeadlinePriority,orgHeadlineText skipwhite
-syn keyword orgTodo TODO containedin=orgHeadlineKeywords,@orgHeadline
-syn keyword orgDone DONE containedin=orgHeadlineKeywords,@orgHeadline
+let kws = get(g:, 'org#keywords', {'todo': ['TODO'], 'done': ['DONE']})
+execute 'syntax keyword orgTodo' join(kws.todo) 'containedin=orgHeadlineKeywords,@orgHeadline'
+execute 'syntax keyword orgDone' join(kws.done) 'containedin=orgHeadlineKeywords,@orgHeadline'
 
 hi link orgHeadline1 Statement
 hi link orgHeadline2 Function
