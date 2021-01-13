@@ -101,21 +101,22 @@ function! org#parsedate() abort " {{{1
   return ''
 endfunction
 
-function! org#plan(expr) abort " {{{1
-  let current = org#plan#get(a:lnum)
-  redraw
-  let prompt = "Planning:\n"
-  let prompt .= getline(org#headline#at(a:lnum)) . "\n"
-  let ts = getline(org#plan#at(a:lnum)) . "\n"
-  let prompt .= org#plan#checkline(a:lnum) ? ts  . "\n": ''
-  let prompt .= '> '
-  let time = input(prompt, '')
-  " let time = input(prompt, '', 'customlist,org#time#completion')
-  let [plantype; datetime] = split(time)
-  " let timestamp = org#time#from_text(join(datetime), current)
-  let timestamp = org#time#dict(join(datetime))
-  let timestamp.active = plantype != 'CLOSED'
-  call org#plan#set(a:lnum, timestamp)
+function! org#plan(planstr) abort " {{{1
+  let [kind; plan] = split(a:planstr)
+  if kind =~? 's\%[cheduled]'
+    let kind = 'SCHEDULED'
+  elseif kind =~? 'd\%[eadline]'
+    let kind = 'DEADLINE'
+  elseif kind =~? 'c\%[losed]'
+    let kind = 'CLOSED'
+  elseif kind =~? 't\%[imestamp]'
+    let kind = 'TIMESTAMP'
+  else
+    let plan = [kind] + plan
+    let kind = 'TIMESTAMP'
+  endif
+  let plan = join(plan)
+  call org#plan#set({kind : plan})
 endfunction
 
 function! org#refile(destination) abort " {{{1
