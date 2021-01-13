@@ -86,6 +86,5 @@ inoremap <buffer> <C-g><C-t> <C-o>diW<C-r>=org#time#dict(@").totext()<Cr>
 
 " DEV STUFF
 
-command! -nargs=* Plan call org#plan('.')
-" command! -nargs=* -complete=customlist,org#time#completion Plan call org#plan('.')
-command! -buffer -nargs=* -complete=customlist,org#outline#complete Refile call org#refile(<q-args>)
+command! -buffer -nargs=+ Plan call org#plan(<q-args>)
+command! -buffer -nargs=+ -complete=customlist,org#outline#complete Refile call org#refile(<q-args>)
