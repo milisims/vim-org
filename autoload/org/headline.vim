@@ -39,7 +39,7 @@ function! org#headline#astarget(expr) abort " {{{1
   let target = []
   while lnum > 0
     let hl = org#headline#get(lnum)
-    call insert(target, hl.item)
+    call insert(target, escape(hl.item, '/\'))
     let lnum = hl.level == 1 ? 0 : org#headline#find(hl.lnum, hl.level - 1, 'nWbx')
   endwhile
   let odir = '^\V' . fnamemodify(org#dir(), ':p')
@@ -102,8 +102,7 @@ function! org#headline#fromtarget(target, ...) abort " {{{1
       return {'filename': fname, 'lnum': 0, 'bufnr': bufnr(fname)}
     endif
     let [fname, headlines] = fspl
-    " FIXME how do I deal with escapes?
-    let headlines = split(headlines, '\(\\\\\)*[^\\]\zs/')
+    let headlines = split(headlines, '[^\\]\zs/')
   elseif type(a:target) == v:t_list
     let [fname; headlines] = a:target
   else

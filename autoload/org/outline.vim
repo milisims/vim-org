@@ -125,8 +125,6 @@ endfunction
 
 function! s:add_cmd(subtree, parent) abort " {{{1
   let [headline, subtrees] = a:subtree
-  let headline.target = a:parent.target . '/' . headline.item
-  " escaping '/' as the delimiter
   let headline.cmd = a:parent.cmd . '/\V\^' . escape(headline.text, '/\') . '\$/'
   for st in subtrees
     call s:add_cmd(st, headline)
@@ -211,8 +209,8 @@ function! s:to_tree(hls) abort " {{{1
     let st = [hl, []]
     call add(current_tree[-1][1], st)
     call add(current_tree, st)
-    call add(current_target, hl.item)
-    let hl.target = fname . '/' . join(current_target, '/')  " TODO escaping?
+    call add(current_target, escape(hl.item, '/\'))
+    let hl.target = fname . '/' . join(current_target, '/')
   endfor
   return current_tree[0][1]
 endfunction
