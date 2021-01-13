@@ -97,10 +97,10 @@ function! org#outline#keywords(...) abort " {{{1
   let mtime = getftime(fname)
 
   if !has_key(s:outlineCache, fname)
-    let s:outlineCache[fname] = {'mtime': -1, 'kwmtime': -1}
+    let s:outlineCache[fname] = {'mtime': -1, 'kwmtime': -2}
   endif
 
-  if (s:outlineCache[fname].kwmtime != mtime || &modified)
+  if s:outlineCache[fname].kwmtime != mtime || &modified
     let s:outlineCache[fname].kwmtime = mtime
     let s:outlineCache[fname].keywords = s:update_keywords(bufnr(fname))
   endif
