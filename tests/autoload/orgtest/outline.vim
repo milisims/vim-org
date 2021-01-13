@@ -3,6 +3,8 @@ function! orgtest#outline#full() abort " {{{1
 endfunction
 
 function! orgtest#outline#file() abort " {{{1
+  call assert_report('Not yet implemented.')
+  return
   let fname = tempname()
   execute 'edit' fname
   setfiletype org

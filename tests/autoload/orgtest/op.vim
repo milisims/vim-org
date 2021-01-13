@@ -1,32 +1,25 @@
 function! orgtest#op#lowerlevelhl() abort " {{{1
+  call assert_report('Test not implemented')
   let text =<< ENDFTORG
-#+TODO: X Y | Z
-
 * A
-<2020-01-01 Wed>
-:PROPERTIES:
-:aaa: 1
-:bbb: abc
-:END:
 
-* X B
-Hi.
+** B
 
-* C
-D
-- E
-** F
 ENDFTORG
-  return orgtest#fsetup('headline', text)
-  6
+  call setline(1, text)
+  2
+  call org#op#lowerlevelhl(1, 1, 'n')
+  call assert_equal(1, getcurpos()[1])
+  3
+  call org#op#lowerlevelhl(1, 1, 'n')
+  call assert_equal(1, getcurpos()[1])
+  4
   call org#op#lowerlevelhl(1, 1, 'n')
   call assert_equal(3, getcurpos()[1])
-  16
-  call org#op#lowerlevelhl(1, 1, 'n')
-  call assert_equal(13, getcurpos()[1])
 endfunction
 
 function! orgtest#op#nexthl() abort " {{{1
+  call assert_report('Test not implemented')
   1
   call org#op#nexthl(2, 1, 0, 'n')
   call assert_equal(10, getcurpos()[1])

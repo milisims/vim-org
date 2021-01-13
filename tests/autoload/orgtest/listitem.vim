@@ -15,7 +15,7 @@ function! s:setup() abort
   4. [x] H
 
 ENDFTORG
-  return orgtest#fsetup('listitem', text)
+call setline(1, text)
 endfunction
 
 function! orgtest#listitem#append() abort " {{{1

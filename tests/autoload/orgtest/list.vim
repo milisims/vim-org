@@ -35,25 +35,31 @@ function! s:setup() abort
   A. Z
 
 ENDFTORG
-  call orgtest#fsetup('headline', text)
+call setline(1, text)
 endfunction
 
 function! orgtest#list#checkline() abort " {{{1
-  call s:setup()
+  let text =<< ENDORG
+  - A 1
+    b
+
+
+    * D 5
+  + E
+  * F
+  ENDORG
+  call setline(1, text)
   call assert_true(org#list#checkline(1))
   call assert_true(org#list#checkline(2))
-  call assert_true(org#list#checkline(3))
-  call assert_true(org#list#checkline(4))
+  call assert_false(org#list#checkline(3))
+  call assert_false(org#list#checkline(4))
   call assert_true(org#list#checkline(5))
   call assert_true(org#list#checkline(6))
-  call assert_true(org#list#checkline(7))
-  call assert_false(org#list#checkline(8))
+  call assert_false(org#list#checkline(7))
 endfunction
 
 function! orgtest#list#find() abort " {{{1
-
   call s:setup()
-
   call assert_equal(5, org#list#find(1))
   call assert_equal(5, org#list#find(2))
   call assert_equal(5, org#list#find(3))

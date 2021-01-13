@@ -26,35 +26,22 @@ function! orgtest#keyword#checktext() abort " {{{1
 endfunction
 
 function! orgtest#keyword#parse() abort " {{{1
-  call assert_equal('A', org#keyword#parse('* A B', ['A']))
-  call assert_equal('', org#keyword#parse('* C B', ['A']))
-  call assert_equal('', org#keyword#parse('A B', ['A']))
+  let kw = {'todo': ['X'], 'done': ['Y'], 'all': ['X', 'Y']}
+  call assert_equal('X', org#keyword#parse('* X A', kw))
+  call assert_equal('Y', org#keyword#parse('* Y A', kw))
+  call assert_equal('', org#keyword#parse('* A', kw))
+  call assert_equal('', org#keyword#parse('X A', kw))
 endfunction
 
 function! orgtest#keyword#cycle() abort " {{{1
-  call s:setup()
-  2call org#keyword#cycle(1)
+  call setline(1, ['* A'])
+  let kw = {'todo': ['X'], 'done': ['Y'], 'all': ['X', 'Y']}
+  1call org#keyword#cycle(-1)
+  call assert_equal('* Y A', getline(1))
+  1call org#keyword#cycle(1)
+  call assert_equal('* A', getline(1))
+  1call org#keyword#cycle(1)
   call assert_equal('* X A', getline(2))
-  2call org#keyword#cycle(-1)
+  1call org#keyword#cycle(2)
   call assert_equal('* A', getline(2))
-  2call org#keyword#cycle(-1)
-  call assert_equal('* Z A', getline(2))
-  2call org#keyword#cycle(-2)
-  call assert_equal('* X A', getline(2))
 endfunction
-
-function! orgtest#keyword#op() abort " {{{1
-  call assert_report('Not yet implemented.')
-  " call org#op#keyword(up)
-endfunction
-
-function! orgtest#keyword#infile() abort " {{{1
-  call assert_report('Not yet implemented.')
-  " call org#outline#keywords()
-endfunction
-
-function! orgtest#keyword#highlight() abort " {{{1
-  call assert_report('Not yet implemented.')
-  " call org#keyword#highlight()
-endfunction
-
