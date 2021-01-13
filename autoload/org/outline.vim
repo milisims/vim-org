@@ -52,16 +52,30 @@ function! org#outline#file(expr, ...) abort " {{{1
     return s:copy(s:outlineCache[fname])
   endif
 
-  let fsummary = {'mtime': mtime, 'kwmtime': mtime, 'keywords': {'todo': [], 'done': []}, 'subtrees': [], 'lnums': {}}
+  let fsummary = {'mtime': mtime, 'kwmtime': mtime, 'keywords': {'todo': [], 'done': []}, 'subtrees': [], 'lnums': {}, 'tags': []}
   " let shortname = substitute(fname, fnamemodify(org#dir(), ':p') . '/\?', '', '')
 
   let starttabnr = tabpagenr()
   execute 'noautocmd $tab split' fname
   try
+    for line in filter(getline(1, '$'), 'v:val =~# ''^#+\u\+:''')
+      let [name, args] = matchlist(line, '^#+\(\u\+\):\s*\(.*\)')[1:2]
+      if name == 'TITLE'  " TODO put this into a handler
+        let fsummary.title = args
+      elseif name == 'FILETAGS'
+        let fsummary.tags = sort(filter(split(args, ':'), '!empty(v:val)'))
+      endif
+    endfor
     let fsummary.keywords = s:update_keywords(bufnr(fname))
     lvimgrep /^*/j %
     " org#headline#get is the slowest component here
     let headlines = map(getloclist(0), 'org#headline#get(v:val.lnum, fsummary.keywords)')
+    if !empty(fsummary.tags)
+      for hl in headlines
+        " TODO inherit tags here or in subtrees or in hl#get??
+        let hl.tags = uniq(extend(sort(hl.tags), fsummary.tags))
+      endfor
+    endif
     let fsummary.subtrees = s:to_tree(headlines)
   catch /^Vim\%((\a\+)\)\=:E480/
   finally
