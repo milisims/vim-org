@@ -5,7 +5,7 @@ function! org#util#search(lnum, pattern, flags, ...) abort " {{{1
   let lnum = line(a:lnum) > 0 ? line(a:lnum) : a:lnum
   let flags = a:flags
   " this really needs to be cleaned up.
-  if lnum == line('$') && flags =~# 'x' && flags =~# 'W' && flags !~# 'b'
+  if (lnum == line('$') && flags =~# 'x' || lnum > line('$')) && flags =~# 'W' && flags !~# 'b'
     return 0
   endif
   if flags =~# 'x'
