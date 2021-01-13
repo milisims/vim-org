@@ -273,7 +273,7 @@ function! s:block_func(hl) abort " {{{1
     let plan = (name =~# '^T' ? '' : name[0] . ':') . time.totext('dTR')
   endif
   return [
-        \ [fnamemodify(a:hl.filename, ':t') . ':', plan, a:hl.keyword, a:hl.item],
+        \ [matchstr(a:hl.target, '[^/]*\.org.*\ze/[^/]\{-}') . ':', plan, a:hl.keyword, a:hl.item],
         \ ['orgAgendaFile', 'orgAgendaPlan', 'orgAgendaKeyword', 'orgAgendaHeadline'],
         \ ]
 endfunction
@@ -301,7 +301,7 @@ function! org#agenda#toqf(agenda) abort " {{{1
 endfunction
 
 function! org#agenda#files(...) abort " {{{1
-  return get(g:, 'org#agenda#filelist', sort(glob(org#dir() . get(a:, 1, '/**/*.org'), 0, 1)))
+  return map(get(g:, 'org#agenda#filelist', sort(glob(org#dir() . get(a:, 1, '/**/*.org'), 0, 1))), 'org#util#fname(v:val)' )
 endfunction
 
 function! org#agenda#late() abort " {{{1

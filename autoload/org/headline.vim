@@ -145,7 +145,7 @@ function! org#headline#get(lnum, ...) abort " {{{1
   " returns {'level', 'keyword', 'done', 'priority', 'item', 'text', 'tags'}
   let info = org#headline#parse(getline(lnum), keywords)
   " :h tag-function: name, filename, cmd, kind, user_data?
-  let info.filename = fnamemodify(bufname(), ':p')
+  let info.filename = org#util#fname(bufname())
   let info.bufnr = bufnr()
   let info.lnum = lnum
   let info.plan = org#plan#get(lnum)
