@@ -1,21 +1,10 @@
-syntax clear
-
-" Dev-help {{{
-nnoremap <buffer> <F7> :call SynStack()<CR>
-function! SynStack()
-  if !exists('*synstack')
-    return
-  endif
-  let l:group = synIDattr(synID(line('.'), col('.'), 1), 'name')
-  echo l:group map(synstack(line('.'), col('.')), 'synIDattr(v:val, "name")')
-endfunc
-" }}}
+syn clear
 
 "syntax cluster orgGreaterElements contains=@orgHeadline,orgSection,orgGreaterBlock,orgDrawers
 
-syntax cluster orgHeadline contains=orgHeadline1,orgHeadline2,orgHeadline3
-syntax cluster orgHeadline add=orgHeadline4,orgHeadline5,orgHeadline6,orgHeadline7
-syntax cluster orgHeadline add=orgHeadline8,orgHeadline9,orgHeadlineN
+syn cluster orgHeadline contains=orgHeadline1,orgHeadline2,orgHeadline3
+syn cluster orgHeadline add=orgHeadline4,orgHeadline5,orgHeadline6,orgHeadline7
+syn cluster orgHeadline add=orgHeadline8,orgHeadline9,orgHeadlineN
 
 " syntax region orgSection start=/^\z(\*\+\)[^*]/ end=/^\ze\(\z1\*\)\@!\*\+/ fold transparent contains=@orgHeadline,orgSection
 
@@ -32,107 +21,106 @@ syntax cluster orgHeadline add=orgHeadline8,orgHeadline9,orgHeadlineN
 
 " syntax match orgHeadline /^\*\+[^*].*$/   contains=orgHeadlines nextgroup=@orgPlanning,orgPropertyDrawer skipnl
 
-syntax match orgHeadline1 /^\*\{1}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline2 /^\*\{2}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline3 /^\*\{3}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline4 /^\*\{4}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline5 /^\*\{5}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline6 /^\*\{6}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline7 /^\*\{7}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline8 /^\*\{8}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadline9 /^\*\{9}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
-syntax match orgHeadlineN /^\*\{10,}[^*].*$/ contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syn match orgHeadline1 /^\*\{1}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syn match orgHeadline2 /^\*\{2}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syn match orgHeadline3 /^\*\{3}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syn match orgHeadline4 /^\*\{4}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syn match orgHeadline5 /^\*\{5}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syn match orgHeadline6 /^\*\{6}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syn match orgHeadline7 /^\*\{7}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syn match orgHeadline8 /^\*\{8}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syn match orgHeadline9 /^\*\{9}[^*].*$/   contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
+syn match orgHeadlineN /^\*\{10,}[^*].*$/ contains=orgHeadlineStars nextgroup=@orgPlanning,orgPropertyDrawer skipnl
 
-syntax match orgHeadlineStars contained /^\*\+/ skipwhite
+syn match orgHeadlineStars contained /^\*\+/ skipwhite
       \ contains=orgHeadlineInnerStar,orgHeadlineLastStar
       \ nextgroup=orgHeadlineText,orgHeadlinePriority,orgHeadlineKeywords
-syntax match orgHeadlineInnerStar contained /\*/ conceal cchar=-
+syn match orgHeadlineInnerStar contained /\*/ conceal cchar=-
       \ nextgroup=orgHeadlineInnerStar,orgHeadlineLastStar
-syntax match orgHeadlineLastStar contained /\*\ze\%([^*]\|$\)/
+syn match orgHeadlineLastStar contained /\*\ze\%([^*]\|$\)/
 
-syntax match orgHeadlineText contained /\S.*$/ contains=orgHeadlineTags,@Spell transparent
-syntax match orgHeadlineTags contained /:\%([[:alnum:]_@#%]*:\)\+/ contains=@NoSpell
-syntax match orgHeadlinePriority contained /\[#\a\]/ nextgroup=orgHeadlineText skipwhite
+syn match orgHeadlineText contained /\S.*$/ contains=orgHeadlineTags,@Spell transparent
+syn match orgHeadlineTags contained /:\%([[:alnum:]_@#%]*:\)\+/ contains=@NoSpell
+syn match orgHeadlinePriority contained /\[#\a\]/ nextgroup=orgHeadlineText skipwhite
 
-syntax match orgHeadlineKeywords contained transparent /\u\+\ze\>/
+syn match orgHeadlineKeywords contained transparent /\u\+\ze\>/
       \ nextgroup=orgHeadlinePriority,orgHeadlineText skipwhite
-" These are overriden immediately, but want to keep defaults available
-syntax keyword orgTodo TODO containedin=orgHeadlineKeywords,@orgHeadline
-syntax keyword orgDone DONE containedin=orgHeadlineKeywords,@orgHeadline
+syn keyword orgTodo TODO containedin=orgHeadlineKeywords,@orgHeadline
+syn keyword orgDone DONE containedin=orgHeadlineKeywords,@orgHeadline
 
-highlight link orgHeadline1 Statement
-highlight link orgHeadline2 Function
-highlight link orgHeadline3 String
-highlight link orgHeadline4 Identifier
-highlight link orgHeadline5 Function
-highlight link orgHeadline6 String
-highlight link orgHeadline7 Identifier
-highlight link orgHeadline8 Function
-highlight link orgHeadline9 String
-highlight link orgHeadlineN Identifier
+hi link orgHeadline1 Statement
+hi link orgHeadline2 Function
+hi link orgHeadline3 String
+hi link orgHeadline4 Identifier
+hi link orgHeadline5 Function
+hi link orgHeadline6 String
+hi link orgHeadline7 Identifier
+hi link orgHeadline8 Function
+hi link orgHeadline9 String
+hi link orgHeadlineN Identifier
 
-highlight link orgHeadlineInnerStar Comment
-highlight link orgHeadlineLastStar Number
-highlight link orgTodo Todo
-highlight link orgDone Conditional
+hi link orgHeadlineInnerStar Comment
+hi link orgHeadlineLastStar Number
+hi link orgTodo Todo
+hi link orgDone Conditional
 
-highlight link orgHeadlinePriority Error
-highlight link orgHeadlineTags SpecialComment
+hi link orgHeadlinePriority Error
+hi link orgHeadlineTags SpecialComment
 " highlight link orgHeadlineText Normal
 
 " TODO color different levels of headlines with matchadd?
 
 " NOTE: empty lines belong to the largest element ending before them
 
-syntax cluster orgPlanning contains=orgPlanDeadline,orgPlanScheduled,orgPlanClosed,orgPlanTime
+syn cluster orgPlanning contains=orgPlanDeadline,orgPlanScheduled,orgPlanClosed,orgPlanTime
 
-syntax match orgPlanDeadline  contained /\s*\zsDEADLINE:/            nextgroup=orgPlanTime skipwhite
-syntax match orgPlanScheduled contained /\s*\zsSCHEDULED:/           nextgroup=orgPlanTime skipwhite
-syntax match orgPlanClosed    contained /\s*\zsCLOSED:/              nextgroup=orgPlanTime skipwhite
-syntax match orgPlanTime      contained /\s*\zs<.*>\(--<.*>\)\?/     nextgroup=@orgPlanning,orgPropertyDrawer skipwhite skipnl contains=@orgTimestampElements
-syntax match orgPlanTime      contained /\s*\zs\[.*\]\(--\[.*\]\)\?/ nextgroup=@orgPlanning,orgPropertyDrawer skipwhite skipnl contains=@orgTimestampElements
+syn match orgPlanDeadline  contained /\s*\zsDEADLINE:/            nextgroup=orgPlanTime skipwhite
+syn match orgPlanScheduled contained /\s*\zsSCHEDULED:/           nextgroup=orgPlanTime skipwhite
+syn match orgPlanClosed    contained /\s*\zsCLOSED:/              nextgroup=orgPlanTime skipwhite
+syn match orgPlanTime      contained /\s*\zs<\d\{4}.*>\(--<.*>\)\?/     nextgroup=@orgPlanning,orgPropertyDrawer skipwhite skipnl contains=@orgTimestampElements
+syn match orgPlanTime      contained /\s*\zs\[\d\{4}.*\]\(--\[.*\]\)\?/ nextgroup=@orgPlanning,orgPropertyDrawer skipwhite skipnl contains=@orgTimestampElements
 
-highlight link orgPlanDeadline  Comment
-highlight link orgPlanScheduled Comment
-highlight link orgPlanClosed    Comment
-highlight link orgPlanTime      Comment
-highlight link orgPlanning      Comment
+hi link orgPlanDeadline  Comment
+hi link orgPlanScheduled Comment
+hi link orgPlanClosed    Comment
+hi link orgPlanTime      Comment
+hi link orgPlanning      Comment
 
-syntax cluster orgTimestampElements contains=orgDate,orgTime,orgTimeRepeat,orgTimeDelay
+syn cluster orgTimestampElements contains=orgDate,orgTime,orgTimeRepeat,orgTimeDelay
 
-syntax match orgDate       contained /\d\{4}-\d\d-\d\d\s\a\+/
-syntax match orgTime       contained /\d\{1,2}:\d\d/
-syntax match orgTimeRepeat contained /\v[.+]?\+\d+\c[hdwmy]>\s*/
-syntax match orgTimeDelay  contained /\v([+-]{1,2}|\.+)\d+[hdwmy]/
+syn match orgDate       contained /\d\{4}-\d\d-\d\d\s\a\+/
+syn match orgTime       contained /\d\{1,2}:\d\d/
+syn match orgTimeRepeat contained /\v[.+]?\+\d+\c[hdwmy]>\s*/
+syn match orgTimeDelay  contained /\v([+-]{1,2}|\.+)\d+[hdwmy]/
 
-highlight link orgDate              Comment
-highlight link orgTime              Comment
-highlight link orgTimeRepeat        Comment
-highlight link orgTimeDelay         Comment
-highlight link orgTimestampElements Comment
+hi link orgDate              Comment
+hi link orgTime              Comment
+hi link orgTimeRepeat        Comment
+hi link orgTimeDelay         Comment
+hi link orgTimestampElements Comment
 
-syntax region orgListItem matchgroup=orgListLeader
+syn region orgListItem matchgroup=orgListLeader
       \ start=/^\z(\s*\)[-+]/ start=/^\z(\s*\)\(\d\+\|\a\)[.)]/ start=/^\z(\s\+\)\*/
       \ end=/\ze\n\z1\S/ end=/\ze\n^$\n^$/ end=/\ze\n\z1\@!/
       \ contains=orgListItem,orgListCheck,orgListTag,@Spell keepend
-syntax match orgListCheck  contained nextgroup=orgListTag              skipwhite /\(\[[xX -]\]\)/
-syntax match orgListTag /\(\w\|\s\)*::/ contained
+syn match orgListCheck  contained nextgroup=orgListTag              skipwhite /\(\[[xX -]\]\)/
+syn match orgListTag /\(\w\|\s\)*::/ contained
 " FIXME: should be 'any character' for orglist tag -- If we just use .*, it clobbers the check
 
 hi link orgListLeader Number
 hi link orgListCheck  Todo
 hi link orgListTag    SpecialComment
 
-syntax region orgPropertyDrawer contained keepend matchgroup=orgPropertyDrawerEnds start=/^\s*:PROPERTIES:$/ end=/^\s*:END:$/ contains=orgNodeProperty,orgNodeMultiProperty fold
-syntax region orgNodeProperty contained keepend matchgroup=orgPropertyName start=/^\s*:\S\+[^+]:/ end=/$/ oneline
-syntax region orgNodeMultiProperty contained keepend matchgroup=orgPropertyName start=/^\s*:\S\++:/ end=/$/ oneline
+syn region orgPropertyDrawer contained keepend matchgroup=orgPropertyDrawerEnds start=/^\s*:PROPERTIES:$/ end=/^\s*:END:$/ contains=orgNodeProperty,orgNodeMultiProperty fold
+syn region orgNodeProperty contained keepend matchgroup=orgPropertyName start=/^\s*:\S\+[^+]:/ end=/$/ oneline
+syn region orgNodeMultiProperty contained keepend matchgroup=orgPropertyName start=/^\s*:\S\++:/ end=/$/ oneline
 
 hi link orgNodeProperty       SpecialComment
 hi link orgNodeMultiProperty  SpecialComment
 hi link orgPropertyDrawerEnds Comment
 hi link orgPropertyName       Identifier
 
-syntax sync match orgSyncPropertyDrawer grouphere orgPropertyDrawer /\v^(:PROPERTIES:$)@=/
+syn sync match orgSyncPropertyDrawer grouphere orgPropertyDrawer /\v^(:PROPERTIES:$)@=/
 " syntax sync match orgSync grouphere orgSection /\v^%(\*+)@=/
 
 " source block
@@ -191,9 +179,9 @@ syntax sync match orgSyncPropertyDrawer grouphere orgPropertyDrawer /\v^(:PROPER
 "" Elements {{{
 "syntax cluster orgElements contains=orgHorizontalRule,orgComment
 "syntax match orgHorizontalRule /\s*-\{5,}\s*$/
-syntax match orgComment /^\s*#\s\+.*$/
+syn match orgComment /^\s*#\s\+.*$/
 "syntax match orgComment /^#\s\+.*$/ contains=orgTodo
-highlight link orgComment Comment
+hi link orgComment Comment
 "" }}}
 
 "" Objects {{{
@@ -241,15 +229,15 @@ highlight link orgComment Comment
 
 "" }}}
 
-syntax region orgBold      start=/\(\s\|^\)\zs\*[^ \t*]/ end=/[^ \t*]\*\ze\(\s\|$\)/ containedin=ALL contains=NONE
-syntax region orgItalic    start=/\(\s\|^\)\zs\/[^ \t/]/ end=/[^ \t/]\/\ze\(\s\|$\)/ containedin=ALL contains=NONE
-syntax region orgUnderline start=/\(\s\|^\)\zs_[^ \t_]/  end=/[^ \t_]_\ze\(\s\|$\)/  containedin=ALL contains=NONE
-syntax region orgVerbatim  start=/\(\s\|^\)\zs=[^ \t=]/  end=/[^ \t=]=\ze\(\s\|$\)/  contains=NONE
+syn region orgBold      start=/\(\s\|^\)\zs\*[^ \t*]/ end=/[^ \t*]\*\ze\(\s\|$\)/ containedin=ALL contains=NONE
+syn region orgItalic    start=/\(\s\|^\)\zs\/[^ \t/]/ end=/[^ \t/]\/\ze\(\s\|$\)/ containedin=ALL contains=NONE
+syn region orgUnderline start=/\(\s\|^\)\zs_[^ \t_]/  end=/[^ \t_]_\ze\(\s\|$\)/  containedin=ALL contains=NONE
+syn region orgVerbatim  start=/\(\s\|^\)\zs=[^ \t=]/  end=/[^ \t=]=\ze\(\s\|$\)/  contains=NONE
 
-highlight orgBold      cterm=bold      gui=bold
-highlight orgItalic    cterm=italic    gui=italic
-highlight orgUnderline cterm=underline gui=underline
-highlight link orgVerbatim Normal
+hi orgBold      cterm=bold      gui=bold
+hi orgItalic    cterm=italic    gui=italic
+hi orgUnderline cterm=underline gui=underline
+hi link orgVerbatim Normal
 
 
 "" syntax region orgCode          start=/\(\s\|^\)\zs\~\S/ end=/\S\~\ze\(\s\|$\)/ containedin=ALL
