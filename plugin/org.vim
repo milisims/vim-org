@@ -19,7 +19,6 @@ let g:org#regex#property = '\v^:([[:alnum:]_-]+)(\+)?:%(\s+|$)(.*)'
 " <4321-12-01 dow 12:34-13:24>
 " <1234-05-21 dow>--<1234-05-22 dow>
 " <1234-05-21 dow 12:34>--<1234-05-22 dow 13:34>
-" TODO one bigass regex & use submatch and match again to decompose
 let g:org#regex#timestamp#date = '\v%((\d{4})-(\d{1,2})-(\d{1,2})(\s+[^]+0-9> -]+)?\s*)'
 let g:org#regex#timestamp#date0 = '\v%(\d{4}-\d{1,2}-\d{1,2}%(\s+[^]+0-9> -]+)?\s*)'
 let g:org#regex#timestamp#date1 = '\v%((\d{4}-\d{1,2}-\d{1,2}%(\s+[^]+0-9> -]+)?)\s*)'
@@ -27,15 +26,14 @@ let g:org#regex#timestamp#time = '\v%((\d{1,2}):(\d{2})\s*)'
 let g:org#regex#timestamp#time0 = '\v%(\d{1,2}:\d{2}\s*)'
 let g:org#regex#timestamp#time1 = '\v%((\d{1,2}:\d{2})\s*)'
 let g:org#regex#timestamp#time2 = '\v%((\d{1,2}):(\d{2})\s*)'
-let g:org#regex#timestamp#repeater = '\v%(([.+]?\+)(\d+)(\c[hdwmy])>\s*)'
-let g:org#regex#timestamp#repeater0 = '\v%(%([.+]?\+)\d+\c[hdwmy]>\s*)'
-let g:org#regex#timestamp#repeater1 = '\v%((%([.+]?\+)\d+\c[hdwmy])>\s*)'
-let g:org#regex#timestamp#delay = '\v%((--?)(\d+)(\c[hdwmy])>\s*)'
-let g:org#regex#timestamp#delay0 = '\v%(%(--?)\d+\c[hdwmy]>\s*)'
-let g:org#regex#timestamp#delay1 = '\v%((%(--?)\d+\c[hdwmy])>\s*)'
-let g:org#regex#timestamp#relative = '\v([-+]?[0-9]+)?\s*([hdwmy])>'
-let g:org#regex#timestamp#relative0 = '\v%([-+]?[0-9]+)?\s*%([hdwmy])>'
-" TODO should we add > to all?
+let g:org#regex#timestamp#repeater = '\v%(<([.+]?\+)(\d+)(\c[hdwmy])>\s*)'
+let g:org#regex#timestamp#repeater0 = '\v%(<%([.+]?\+)\d+\c[hdwmy]>\s*)'
+let g:org#regex#timestamp#repeater1 = '\v%(<(%([.+]?\+)\d+\c[hdwmy])>\s*)'
+let g:org#regex#timestamp#delay = '\v%(<(--?)(\d+)(\c[hdwmy])>\s*)'
+let g:org#regex#timestamp#delay0 = '\v%(<%(--?)\d+\c[hdwmy]>\s*)'
+let g:org#regex#timestamp#delay1 = '\v%(<(%(--?)\d+\c[hdwmy])>\s*)'
+let g:org#regex#timestamp#relative = '\v%(<([-+]?[0-9]+)?([hdwmy])>)'
+let g:org#regex#timestamp#relative0 = '\v%(<%([-+]?[0-9]+)?[hdwmy]>)'
 
 let [o, c] = ['[<[]', '[>\]]']  " open and close for ranges
 let g:org#regex#timestamp#repeaterdelay0 = org#regex#timestamp#repeater0 . '?' . org#regex#timestamp#delay0 . '?'

@@ -2,6 +2,7 @@
 " SCHEDULED shows up on AND AFTER that date
 " Deadline shows up on and BEFORE that date (days defined by a variable -- name please)
 
+" Names {{{1
 let org#timestamp#month_names = get(g:, 'org#timestamp#month_names', [
       \ 'january', 'february', 'march', 'april', 'may', 'june',
       \ 'july', 'september', 'october', 'november', 'december' ])
@@ -38,87 +39,66 @@ let s:months_ly = [
 " BIG TODO: use \v\c everywhere, or \v\C
 
 function! org#time#dict(text, ...) abort " {{{1
-  try
-    if string(str2nr(a:text)) == a:text
-      return s:dict_from_ftime(a:text)
+  " Accepts formats:
+  " int
+  " All timestamp formats
+  " Relative keywords: today/tomorrow/yesterday/now
+  " Relative times: +- h/d/w/m/y
+  " Optionally in text:
+  " time (if in relative times)
+  " repeater/delay strings
+  " Optional argument: time relative to when? accepts same arg types.
+
+  let tdict = {'active': a:text !~ '\[.*\]', 'totext': function('s:totext'), 'repeater': {}, 'delay': {}}
+
+  " Check if a simple number
+  if type(a:text) == v:t_number
+    let tdict.start = a:text
+    let tdict.end = a:text
+    return tdict
+  elseif a:text =~? '[[<]\d\+[\]>]'
+    let tdict.start = str2nr(a:text[1:-2])
+    let tdict.end = tdict.start
+    return tdict
+  endif
+
+  " Check for well defined matches first, probably most common
+  if a:text =~? g:org#regex#timestamp#datetime0
+    let res = matchlist(a:text, g:org#regex#timestamp#daterange2)
+    if !empty(res)
+      let rd1 = s:parse_full(res[1])
+      let rd2 = s:parse_full(res[2])
+      let rd1.end = rd2.end
+      call extend(rd1.repeater, rd2.repeater, 'force')
+      call extend(rd1.delay, rd2.delay, 'force')
+    else
+      let rd1 = s:parse_full(a:text)
     endif
-  catch
+    return extend(tdict, rd1)
+  endif
+
+  " If there are no well defined matches, then look for relative date, time, repeaters, delays
+  " Undefined if doesn't match: <relative time> [time] [repeater] [delay]
+  let [date; remainder] = split(a:text)
+  try
+    let tdict.start = s:parse_relative(date, get(a:, 1, localtime()))
+    let tdict.end = tdict.start
+  catch /^Vim\%((\a\+)\)\=:E121/ " variable doesn't exist, ftime. Don't know how to parse it
+    echoerr 'Unable to parse ''' . a:text . ''' as datetime, must start with a relative date.'
   endtry
 
-  let relatime = get(a:, 1, localtime())
-  if type(relatime) == v:t_dict
-    let relatime = relatime.start
-  elseif type(relatime) == v:t_string
-    let relatime = org#time#dict(relatime).start
-  endif
+  let remainder = join(remainder)
+  try
+    let dt = s:parse_time(remainder)
+    let tdict.start += dt.start
+    let tdict.end += dt.end
+  catch /^Vim\%((\a\+)\)\=:E688/ " Not enough list items -- didn't match
+  endtry
 
-  let opts = {'active': a:text !~ '\[.*\]'}
-  let [text; repdel] = split(split(a:text, opts.active ? '[><]' : '[\[\]]')[0])
+  let tdict.repeater = s:parse_repeater(remainder)
+  let tdict.delay = s:parse_delay(remainder)
 
-  if text =~? '\<n\%[ow]\>'  " Keyword parsing
-    let ftime = relatime
-  elseif text =~? '\<tom\%[orrow]\>'
-    let ftime = s:text2ftimerange(strftime('%Y-%m-%d', relatime))[0][0] + s:p.d
-  elseif text =~? '\<t\%[oday]\>'  " t and to default to 'today'
-    let ftime = s:text2ftimerange(strftime('%Y-%m-%d', relatime))[0][0]
-  elseif text =~? '\<y\%[esterday]\>'
-    let ftime = s:text2ftimerange(strftime('%Y-%m-%d', relatime))[0][0] - s:p.d
-
-  elseif text =~? g:org#regex#timestamp#relative0  " relative time parsing (+1d)
-    let [n, t] = matchlist(text, g:org#regex#timestamp#relative)[1:2]
-    let ftime = t == 'h' ? localtime() : s:text2ftimerange(strftime('%Y-%m-%d', relatime))[0][0]
-    let ftime += s:p[t] * str2nr(n)
-
-  elseif a:text =~? g:org#regex#timestamp#datetime0  " date parsing. Want a:text here.
-    let res = matchlist(a:text, g:org#regex#timestamp#daterange2)
-    " ftime is a list here, handled in dict_from_ftime
-    if !empty(res)
-      let [r1ftime, rd1] = s:text2ftimerange(res[1])
-      let [r2ftime, rd2] = s:text2ftimerange(res[2])
-      let ftime = [r1ftime[0], r2ftime[1]]
-      let repdel = extend(rd1, rd2, 'force')
-    else
-      let [ftime, repdel] = s:text2ftimerange(a:text)
-    endif
-    call extend(opts, repdel, 'force')
-
-  elseif text =~ '\v([-+]?[0-9]*)?\s*(\a+)'  " relative day of week. +2 mon for example.
-    let [sn, day] = matchlist(text, '\v([-+]?[0-9]*)?\s*(\a+)')[1:2]
-    let day = matchstrpos(g:org#timestamp#days, day)[1]
-    if day == -1
-      throw 'org: Unable to parse ' . a:text
-    endif
-    let nn = max([str2nr(sn) - 1, 0])
-    if day == strftime('%u') - 1
-    endif
-    let today = s:text2ftimerange(strftime('%Y-%m-%d', relatime))[0][0]
-    " TODO option %u vs %w
-    if day == strftime('%u') - 1
-      let nn += nn >= 0 ? 1 : -1
-    endif
-    let ftime = today + ((day - strftime('%u') + 1) % 7) * s:p.d + nn * s:p.w
-  endif
-
-  " Except in the case of date parsing, process 'opts'
-  if type(repdel) == v:t_list
-    for rd in repdel
-      let dmatch = matchlist(rd, g:org#regex#timestamp#delay)
-      if !empty(dmatch)
-        let opts.delay = {'type': dmatch[1], 'val': dmatch[2] * s:p[dmatch[3]], 'text': rd}
-        continue
-      endif
-
-      let rmatch = matchlist(rd, g:org#regex#timestamp#repeater) " type, value, unit
-      if !empty(rmatch)
-        let opts.repeater = {'type': rmatch[1], 'val': rmatch[2] * s:p[rmatch[3]], 'text': rd}
-      endif
-    endfor
-  endif
-
-  if !exists('ftime')
-    throw 'org: Unable to parse ' . a:text
-  endif
-  return s:dict_from_ftime(ftime, opts)
+  return tdict
 endfunction
 
 function! org#time#diff(t1, t2) abort " {{{1
@@ -150,40 +130,6 @@ function! org#time#diff(t1, t2) abort " {{{1
   endif
 
   return a:t1 - a:t2  " both numbers
-endfunction
-
-function! s:text2ftimerange(date, ...) abort " {{{1
-
-  let [date, time, repeat, delay] = matchlist(a:date, g:org#regex#timestamp#full4)[1:4]
-  let [y, m, d, dow] = matchlist(date, g:org#regex#timestamp#date)[1:4]
-  let [H1, M1, H2, M2] = [0, 0, '', '']
-  if !empty(time)
-    let [H1, M1, H2, M2] = matchlist(time, g:org#regex#timestamp#timerange4)[1:4]
-  endif
-
-  let repdel = {}
-  let rmatch = matchlist(repeat, g:org#regex#timestamp#repeater) " type, value, unit
-  if !empty(rmatch)
-    let repdel.repeater = {'type': rmatch[1], 'val': rmatch[2] * s:p[rmatch[3]], 'text': repeat}
-  endif
-  let dmatch = matchlist(delay, g:org#regex#timestamp#delay)
-  if !empty(dmatch)
-    let repdel.delay = {'type': dmatch[1], 'val': dmatch[2] * s:p[dmatch[3]], 'text': delay}
-  endif
-
-  let time = float2nr((y - 1970) * 365.25 + 0.25) * s:p.d
-  " Check if it's a leapyear
-  let time += ((y % 4 == 0 && y % 100 > 0) || (y % 400 == 0)) ? s:months_ly[m - 1] : s:months[m - 1]
-  let time += (d - 1) * s:p.d
-  " timezone calc
-  let [sgn, zhr, zmin] = matchlist(strftime('%z', time), '\v([+-])?(\d\d)(\d\d)')[1:3]
-  let tz = (sgn == '-' ? -1 : 1) * (zhr * s:p.h + zmin * 60)
-  let start = time + H1 * s:p.h + M1 * 60 - tz
-  let end = start
-  if !empty(H2) > 0
-    let end = time + H2 * s:p.h + M2 * 60 - tz
-  endif
-  return [[start, end], repdel]
 endfunction
 
 function! org#time#modify(time, mod) abort " {{{1 RENAME
@@ -221,30 +167,104 @@ function! org#time#repeat(time) abort " {{{1
   return time
 endfunction
 
-function! s:text2repdel() abort " {{{2
-  let repdel = {}
-  let rmatch = matchlist(repeat, g:org#regex#timestamp#repeater) " type, value, unit
-  if !empty(rmatch)
-    let repdel.repeater = {'type': rmatch[1], 'val': rmatch[2] * s:p[rmatch[3]], 'text': repeat}
-  endif
-  let dmatch = matchlist(delay, g:org#regex#timestamp#delay)
-  if !empty(dmatch)
-    let repdel.delay = {'type': dmatch[1], 'val': dmatch[2] * s:p[dmatch[3]], 'text': delay}
-  endif
+
+function! s:parse_date(date) abort " {{{1
+
+  let [y, m, d, dow] = matchlist(a:date, g:org#regex#timestamp#date)[1:4]
+
+  let time = float2nr((y - 1970) * 365.25 + 0.25) * s:p.d
+  " Check if it's a leapyear
+  let time += ((y % 4 == 0 && y % 100 > 0) || (y % 400 == 0)) ? s:months_ly[m - 1] : s:months[m - 1]
+  let time += (d - 1) * s:p.d
+  " timezone calc
+  let [sgn, zhr, zmin] = matchlist(strftime('%z', time), '\v([+-])?(\d\d)(\d\d)')[1:3]
+  let tz = (sgn == '-' ? -1 : 1) * (zhr * s:p.h + zmin * 60)
+  return time - tz
 endfunction
 
-function! s:dict_from_ftime(ftime, ...) abort " {{{1
-  " Defaults : active: 1, repeater: '', delay '', text ftime2date(start)
-  let [start, end] = type(a:ftime) == v:t_list ? a:ftime : [a:ftime, a:ftime]
-  let opts = get(a:, 1, {})
+function! s:parse_delay(text) abort " {{{1
+  let dmatch = matchlist(a:text, g:org#regex#timestamp#delay)
+  if !empty(dmatch)
+    return {'type': dmatch[1], 'val': dmatch[2] * s:p[dmatch[3]], 'text': dmatch[0]}
+  endif
+  return {}
+endfunction
 
-  return extend({'totext': function('s:totext'),
-        \ 'active': 1,
-        \ 'start': start,
-        \ 'end': end,
-        \ 'repeater': {},
-        \ 'delay': {},
-        \}, opts, 'force')
+function! s:parse_full(date) abort " {{{1
+  let [date, time, repeater, delay] = matchlist(a:date, g:org#regex#timestamp#full4)[1:4]
+  let ftime = s:parse_date(date)
+  if !empty(time)
+    let tdict = s:parse_time(time)
+  else
+    let tdict = {'start': 0, 'end': 0}
+  endif
+  let [tdict.start, tdict.end] = [tdict.start + ftime, tdict.end + ftime]
+  let tdict.repeater = s:parse_repeater(repeater)
+  let tdict.delay = s:parse_delay(delay)
+  return tdict
+endfunction
+
+function! s:parse_relative(text, relatime) abort " {{{1
+  let relatime = a:relatime
+  if type(relatime) == v:t_dict
+    let relatime = relatime.start
+  elseif type(relatime) == v:t_string
+    let relatime = org#time#dict(relatime).start
+  endif
+
+  if a:text =~? '\<n\%[ow]\>'  " Keyword parsing
+    return relatime
+  endif
+  let today = s:parse_date(strftime('%Y-%m-%d', relatime))
+  if a:text =~? '\<tom\%[orrow]\>'
+    return today + s:p.d
+  elseif a:text =~? '\<t\%[oday]\>'  " t and to default to 'today'
+    return today
+  elseif a:text =~? '\<y\%[esterday]\>'
+    return today - s:p.d
+
+  elseif a:text =~? (g:org#regex#timestamp#relative0)  " relative time parsing (+1d)
+    let [n, t] = matchlist(a:text, g:org#regex#timestamp#relative)[1:2]
+    echo a:text.':' n t
+    return (t == 'h' ? localtime() : today) + s:p[t] * str2nr(n)
+
+  elseif a:text =~ '\v([-+]?[0-9]*)?\s*(\a+)'  " relative day of week. +2 mon for example.
+    let [signnum, day] = matchlist(a:text, '\v([-+]?[0-9]*)?\s*(\a+)')[1:2]
+    let day = match(g:org#timestamp#days, day)
+    if day == -1
+      throw 'org: Unable to parse ' . a:text
+    endif
+    " The logic here is a bit odd. Calc the day difference first: day - (strftime(%u) - 1)
+    " For example, Tue -> Thu is +2, and Thu -> Tue should be +5, so take above and add 7 and mod 7
+    " Giving us (8 + day - strftime('%u', relatime)) % 7
+    " To calc. the number of weeks, just convert signnum (empty, +, -, +num, -num) to a nr. Empty
+    " + and - go to zero, since we're going to 'the next DAY' by default, subtract 1 from the num
+    " if positive, and subtract an additional week if sign is negative.
+    let nweeks = str2nr(signnum) - 1
+    if signnum !~ '^-'
+      let nweeks = max([nweeks, 0])
+    endif
+    return today + ((8 + day - strftime('%u', relatime)) % 7) * s:p.d + nweeks * s:p.w
+  endif
+  return ftime
+endfunction
+
+function! s:parse_repeater(text) abort " {{{1
+  let rmatch = matchlist(a:text, g:org#regex#timestamp#repeater) " type, value, unit
+  if !empty(rmatch)
+    return {'type': rmatch[1], 'val': rmatch[2] * s:p[rmatch[3]], 'text': rmatch[0]}
+  endif
+  return {}
+endfunction
+
+function! s:parse_time(time) abort " {{{1
+  let [H1, M1, H2, M2] = matchlist(a:time, g:org#regex#timestamp#timerange4)[1:4]
+  let start = H1 * s:p.h + M1 * 60
+  let end = start
+  if !empty(H2) > 0
+    let end = H2 * s:p.h + M2 * 60
+  endif
+  return {'start': start, 'end': end}
 endfunction
 
 function! s:totext(...) abort dict " {{{1
