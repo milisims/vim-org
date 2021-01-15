@@ -2,8 +2,10 @@
 " if exists('*GetOrgIndent')
 "   finish
 " endif
+setlocal indentexpr=org#indent()
+setlocal indentkeys=0#,0*,0-,0+,0.,o,O,!^F
 
-function! GetOrgIndent(...) abort " {{{1
+function! org#indent(...) abort " {{{1
   let lnum = get(a:, 1, v:lnum)
   let prefix = get(g:, 'org#indent#to_hllevel', 0) ? org#headline#level(lnum) : 0
   if getline(lnum) =~# '^\*\|^\s*#'  " if headline or #

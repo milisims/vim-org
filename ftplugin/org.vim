@@ -1,6 +1,4 @@
 " setlocal spell
-setlocal indentexpr=GetOrgIndent()
-setlocal indentkeys=0#,0*,0-,0+,0.,o,O,!^F
 setlocal foldmethod=expr
 setlocal foldexpr=org#fold#expr(v:lnum)
 setlocal foldtext=org#fold#text()
