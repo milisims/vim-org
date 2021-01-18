@@ -104,9 +104,27 @@ function! org#agenda#build(name) abort " {{{1
         call extend(items, f.list)
       endfor
     endif
-    call filter(items, section.filter)
+
+    if type(section.filter) == v:t_string
+      call filter(items, s:make_filter(section.filter))
+    elseif type(section.filter) == v:t_func
+      call filter(items, section.filter)
+    else
+      try
+        echoerr 'Agenda filter must be string or funcref'
+      endtry
+    endif
+
     if has_key(section, 'sorter')
-      call sort(items, section.sorter)
+      if type(section.sorter) == v:t_string
+        call sort(items, s:make_sorter(section.sorter))
+      elseif type(section.sorter) == v:t_func
+        call sort(items, section.sorter)
+      else
+        try
+          echoerr 'Agenda sorter must be string or funcref'
+        endtry
+      endif
     endif
 
     let just = get(section, 'justify', [])
@@ -304,16 +322,144 @@ function! org#agenda#files(...) abort " {{{1
   return map(get(g:, 'org#agenda#filelist', sort(glob(org#dir() . get(a:, 1, '/**/*.org'), 0, 1))), 'org#util#fname(v:val)' )
 endfunction
 
-function! org#agenda#late() abort " {{{1
-  " let agenda = filter(, {k, hl -> !empty(hl.TODO)})
-  let agenda = filter(org#agenda#list(), {k, hl -> !hl.done && org#plan#islate(hl.plan)})
-  call sort(agenda, org#util#seqsortfunc(['file', 'lnum']))
-  return agenda
+function! s:make_filter(str) abort " {{{1
+  if count(a:str, "'") % 2 > 0
+    try
+      echoerr 'Unbalanced single quotes in search string: "' . a:str . '"'
+    endtry
+  endif
+  let filterstr = [[]]
+  let keywords = []
+  call map(values(org#agenda#full()), 'extend(keywords, v:val.keywords.all)')
+  let keywords = uniq(sort(keywords))
+
+  " Get rid of spaces outside of quotes, and then loop through each item.
+  let str = substitute(a:str, '\v \ze%(%([^'']*''[^'']*'')*[^'']*$)', '', 'g')
+  let options = split(str, '\v\ze[-+|&]%(%([^'']*''[^'']*'')*[^'']*$)')
+  for fl in filter(options, '!empty(v:val)')
+    if fl[0] == '|'
+      let fl = fl[1:]
+      call add(filterstr, [])
+      if empty(fl)
+        continue
+      endif
+    endif
+
+    let [incl, name, comparison, value] = matchlist(fl, '\v^([-+])?(.{-})%(([!=]?[=~][#?]?|[<>]\=?)(.*))?$')[1:4]
+    let included = incl != '-'
+    let name = substitute(name, "'", '', 'g')
+    let value = substitute(value, "'", '', 'g')
+
+    if index(['TIMESTAMP', 'DEADLINE', 'SCHEDULED', 'CLOSED'], name) >= 0
+      " Check if it has name plan at all
+      " If has comparison, compare.
+      let fs = 'has_key(v:val.plan, ' . name . ')'
+      if !empty(comparison)
+        let value = org#time#dict('monday')
+        let value = {'start': value.start, 'end': value.end}
+        let fs = fs . ' && org#time#diff(v:val.plan.' . name . ', ' . string(value) . ')'
+        let fs = '(' . fs . ' ' . comparison . ' 0)'
+      endif
+      let fs = (included ? '' : '!') . fs . ''
+
+    elseif name == 'PLAN'
+      if !empty(comparison)
+        let value = org#time#dict('monday')
+        let value = {'start': value.start, 'end': value.end}
+        let fs = 'org#plan#within(v:val.plan, ' . string(value) .  ')'
+      else
+        let fs = 'org#plan#isplanned(v:val.plan)'
+      endif
+      let fs = (included ? '' : '!') . fs
+
+    elseif name == 'LATE'
+      let fs = (included ? '' : '!') . 'org#plan#islate(v:val.plan)'
+
+    elseif name == 'DONE'
+      let fs = (included ? '' : '!' ) . 'v:val.done'
+
+    elseif name == 'KEYWORD'
+      let fs = (included ? '!' : '' ) . 'empty(v:val.keyword)'
+
+    elseif !empty(comparison) " is property or timestamp
+      " +-, propname, comparison, value
+      if name == '' " plan
+        let value = org#time#dict(value)
+        let fs = "v:val.properties['" . name . "'] " . comparison . ' ' . value
+      else
+        if value =~ '^<.*>$'
+          let value = org#time#dict(value)
+        endif
+        let fs = "v:val.properties['" . name . "'] " . comparison . ' ' . value
+      endif
+      let fs = (included ? '(' : '!(') . fs . ')'
+
+    elseif index(keywords, name) >= 0
+      let fs = 'v:val.keyword ' . (included ? '=' : '!') . "= '" . name . "'"
+
+    elseif !empty(name)
+      let fs = "index(v:val.tags, '" . name . "') " . (included ? '>=' : '<') . ' 0'
+
+    else
+      try
+        echoerr 'Unable to parse "' . fl . '" in search "' . a:str . '"'
+      endtry
+    endif
+
+    call add(filterstr[-1], fs)
+
+  endfor
+  call filter(filterstr, '!empty(v:val)')
+  if empty(filterstr)
+    return '1'
+  endif
+  return '(' . join(map(filterstr, 'join(v:val, " && " )'), ') || (') . ')'
 endfunction
 
-function! org#agenda#todo() abort " {{{1
-  let agenda = filter(org#agenda#list(), {k, v -> !v.done && !empty(v.keyword)})
-  call sort(agenda, org#util#seqsortfunc(['FILE', 'LNUM']))
-  return agenda
+function! s:make_sorter(str) abort " {{{1
+  " + is ascending, - is descending. Assume property, items without property do what?
+  " Must be +A-b-c+d, no other options. Just: sort based on A, then b, then c, then d.
+  if count(a:str, "'") % 2 > 0
+    try
+      echoerr 'Unbalanced single quotes in search string: "' . a:str . '"'
+    endtry
+  endif
+  let sortlist = []
+
+  " Get rid of spaces outside of quotes, and then loop through each item.
+  let str = substitute(a:str, '\v \ze%(%([^'']*''[^'']*'')*[^'']*$)', '', 'g')
+  let options = split(str, '\v\ze[-+]%(%([^'']*''[^'']*'')*[^'']*$)')
+  " Construct a lambda, will be like {hl1, hl2 -> string}
+  for fl in filter(options, '!empty(v:val)')
+
+    let [ace, name] = matchlist(fl, '\v^([-+])?(.{-})$')[1:2]
+    let [a, b] = ace != '-' ? ['hl1', 'hl2'] : ['hl2', 'hl1']
+    let name = substitute(name, "'", '', 'g')
+
+    if index(['TIMESTAMP', 'DEADLINE', 'SCHEDULED', 'CLOSED'], name) >= 0
+      let sortstr = 'org#time#diff(' . a . '.plan.' . name . ', ' . b . '.plan.' . name . ')'
+    elseif name == 'PLAN'
+      let sortstr = 'org#time#diff(org#plan#nearest(' . a . '.plan), org#plan#nearest(' . b . '.plan))'
+    else
+      let sortstr = a . '.' . name . ' - ' . b . '.' . name
+    endif
+
+    call add(sortlist, sortstr)
+
+  endfor
+  if len(sortlist) == 1
+    return eval('{hl1, hl2 -> ' . substitute(sortlist[0], 'a:', '', 'g') . '}')
+  endif
+  function s:sortfunc(hl1, hl2) closure
+    let [hl1, hl2] = [a:hl1, a:hl2]
+    for sorter in sortlist
+      let diff = eval(sorter)
+      if diff != 0
+        return diff
+      endif
+    endfor
+    return 0
+  endfunction
+  return funcref('s:sortfunc')
 endfunction
 
