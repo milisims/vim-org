@@ -49,6 +49,9 @@ function! org#time#dict(text, ...) abort " {{{1
   " repeater/delay strings
   " Optional argument: time relative to when? accepts same arg types.
 
+  if type(a:text) == v:t_dict
+    return a:text
+  endif
   let tdict = {'active': a:text !~ '\[.*\]', 'totext': function('s:totext'), 'repeater': {}, 'delay': {}}
 
   " Check if a simple number
@@ -151,10 +154,17 @@ function! org#time#repeat(time) abort " {{{1
     return time
   endif
   if time.repeater.type == '.+'  " .+1m marks the date to one month after 'today'
-    " TODO rather than localtime, use #dict('today') if appropriate, or otherwise include time of day
-    " Treat hour separately from w/d/m/y
-    let [time.start, time.end] = [localtime(), localtime() + time.end - time.start]
-    let time = org#time#modify(time, time.repeater.val . time.repeater.unit)
+    let today = s:parse_date(strftime('%Y-%m-%d'))
+    let timestart = strftime('%R', time.start)
+    let timeend = strftime('%R', time.end)
+    if timestart != '00:00' || timeend != '00:00'
+      let [dts, dte] = [s:parse_time(timestart).start, s:parse_time(timeend).end]
+      " FIXME for <time>--<time> ?
+      let [time.start, time.end] = [today + dts, today + dte]
+    else
+      let [time.start, time.end] = [today, today]
+    endif
+    let time = org#time#modify(time, time.repeater.val)
   elseif time.repeater.type == '++'  " ++1m adds 1 month at a time until it is in the future
     let now = localtime()
     let time = org#time#modify(time, time.repeater.val)
@@ -169,9 +179,7 @@ endfunction
 
 
 function! s:parse_date(date) abort " {{{1
-
   let [y, m, d, dow] = matchlist(a:date, g:org#regex#timestamp#date)[1:4]
-
   let time = float2nr((y - 1970) * 365.25 + 0.25) * s:p.d
   " Check if it's a leapyear
   let time += ((y % 4 == 0 && y % 100 > 0) || (y % 400 == 0)) ? s:months_ly[m - 1] : s:months[m - 1]
@@ -225,7 +233,6 @@ function! s:parse_relative(text, relatime) abort " {{{1
 
   elseif a:text =~? (g:org#regex#timestamp#relative0)  " relative time parsing (+1d)
     let [n, t] = matchlist(a:text, g:org#regex#timestamp#relative)[1:2]
-    echo a:text.':' n t
     return (t == 'h' ? localtime() : today) + s:p[t] * str2nr(n)
 
   elseif a:text =~ '\v([-+]?[0-9]*)?\s*(\a+)'  " relative day of week. +2 mon for example.
