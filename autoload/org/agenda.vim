@@ -103,28 +103,11 @@ function! org#agenda#build(name) abort " {{{1
       for f in values(org#outline#multi(files))
         call extend(items, f.list)
       endfor
-    endif
-
-    if type(section.filter) == v:t_string
-      call filter(items, s:make_filter(section.filter))
-    elseif type(section.filter) == v:t_func
-      call filter(items, section.filter)
-    else
-      try
-        echoerr 'Agenda filter must be string or funcref'
-      endtry
+      let items = org#agenda#filter(items, section.filter)
     endif
 
     if has_key(section, 'sorter')
-      if type(section.sorter) == v:t_string
-        call sort(items, s:make_sorter(section.sorter))
-      elseif type(section.sorter) == v:t_func
-        call sort(items, section.sorter)
-      else
-        try
-          echoerr 'Agenda sorter must be string or funcref'
-        endtry
-      endif
+      let items = org#agenda#sort(items, section.sorter)
     endif
 
     let just = get(section, 'justify', [])
@@ -160,6 +143,29 @@ function! org#agenda#build(name) abort " {{{1
   " todo: mapclear & set up mappings
 endfunction
 
+function! org#agenda#filter(items, filter) abort " {{{1
+  let items = a:items
+  if type(a:filter) == v:t_string
+    return filter(items, s:make_filter(a:filter))
+  elseif type(a:filter) == v:t_func
+    return filter(items, a:filter)
+  endif
+  try
+    echoerr 'Agenda filter must be string or funcref'
+  endtry
+endfunction
+
+function! org#agenda#sort(items, sorter) abort " {{{1
+  let items = a:items
+  if type(a:sorter) == v:t_string
+    return sort(items, s:make_sorter(a:sorter))
+  elseif type(a:sorter) == v:t_func
+    return sort(items, a:sorter)
+  endif
+  try
+    echoerr 'Agenda sorter must be string or funcref'
+  endtry
+endfunction
 
 function! s:jump() abort " {{{1
   if !has_key(b:to_hl, line('.'))
