@@ -65,14 +65,21 @@ function! org#property#all(lnum, ...) abort " {{{1
   if start == 0
     return {}
   endif
+  return org#property#fromtext(getline(start, end))
+endfunction
+
+function! org#property#fromtext(text) abort " {{{1
   let properties = {}
-  for lnum in range(start, end)
-    let [name, val] = org#property#parse(getline(lnum))
-    if type(val) == v:t_list
-      let old = get(properties, name, [])  " previous might not be a list
-      let val = (type(old) == v:t_list ? old : [old]) + val
-    endif
-    let properties[name] = val
+  for item in a:text
+    try
+      let [name, val] = org#property#parse(item)
+      if type(val) == v:t_list
+        let old = get(properties, name, [])  " previous might not be a list
+        let val = (type(old) == v:t_list ? old : [old]) + val
+      endif
+      let properties[name] = val
+    catch /Org/
+    endtry
   endfor
   return properties
 endfunction
@@ -117,8 +124,12 @@ function! org#property#isindrawer(lnum) abort " {{{1
 endfunction
 
 function! org#property#parse(text) abort " {{{1
-  let [name, multi, val] = matchlist(a:text, g:org#regex#property)[1:3]
-  return [name, multi == '+' ? [val] : val]
+  try
+    let [name, multi, val] = matchlist(a:text, g:org#regex#property)[1:3]
+    return [name, multi == '+' ? [val] : val]
+  catch /^Vim\%((\a\+)\)\=:E688/
+    echoerr 'Org: failed to parse property "' . a:text . '"'
+  endtry
 endfunction
 
 function! org#property#remove(lnum, name) abort " {{{1
