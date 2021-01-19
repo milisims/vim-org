@@ -1,76 +1,5 @@
-function! org#agenda#full() abort " {{{1
-  " TODO: do we want a 'deepcopy' for the agenda cache? Want the subtrees etc to point at
-  " the right places?
-  return org#outline#multi(org#agenda#files())
-endfunction
-
-" Agenda definition {{{1
-" An agenda will be defined as:
-" A list of dictionaries that are each sections in the agenda. A section is:
-" Required:
-" title: str or funcref. If funcref, full agenda passed in as single argument.
-" filter: str or funcref. str used in filter() on a list of agenda headlines.
-" Optional:
-" sorter: str or funcref, if str, map() used. funcref gets filtered list of headlines.
-"         Default is by date schedule date then name?
-" display: funcref, passed in: title, list of filtered and sorted items.
-"          Items displayed as:    hl.title         :tags:
-" files: list of filenames. Uses org#util#fname format
-
-" An agenda
-" window: function that creates the window, defaults to g:org#agenda#window
-" Note: 'headline' is a similiar value from headline#get
-" After an agenda is defined, it can be displayed with Agenda [name].
-" This command creates a nomod buffer like UndoTree or NerdTree, etc
-" generates titles, filters, sorts, then displays each item in a buffer
-" variable to set up window generation
-
-" let g:org#agenda#window = function('my#popupwindow')
-" let g:org#agenda#views = { name :
-" [
-" {'title': 'Daily', 'filter': {_, hl -> org#plan#within(hl.plan, '1d')}},
-" {'title': 'Weekly', 'filter': {_, hl -> org#plan#within(hl.plan, '1w')}},
-" {'title': 'NEXT', 'filter': {_, hl -> org#plan#within(hl.plan, '1m')}},
-" {'title': 'TODO', 'filter': {_, hl -> org#plan#within(hl.plan, '1m')}},
-" {'title': 'Stuck Projects', 'filter': {_, hl -> org#plan#within(hl.plan, '1m')}},
-" ]}
-" }}}
-" Simplified agenda definition {{{1
-" An agenda will be defined as:
-" A list of dictionaries that are each sections in the agenda. A section is:
-" Required:
-" title: str or funcref. If funcref, full agenda passed in as single argument.
-" filter: str or funcref. str used in filter() on a list of agenda headlines.
-" Optional:
-" sorter: str or funcref, if str, map() used. funcref gets filtered list of headlines.
-"         Default is by date schedule date then name?
-" display: str, 'time', 'date', 'items'
-" files: list of filenames. Uses org#util#fname format
-
-" An agenda
-" window: command that creates the window, defaults to g:org#agenda#window
-" rebuild: if 1, force rebuild rather than searching for an agenda buffer
-
-" }}}
-
-" Highlighting done with matchaddpos, the display function? should highlight it
-
 let g:org#agenda#wincmd = get(g:, 'org#agenda#wincmd', 'keepalt topleft vsplit')
 let g:org#agenda#jump = get(g:, 'org#agenda#jump', 'edit')
-
-" TODO display format, like stl? %f -> filename, %t -> time, %p plan, etc.
-
-" 1. define syntax region for the section
-" 2. match: filename, schedule, etc. any key in a headline item
-"    - Properties & tags handeled specially
-"    - Support default values if empty?
-" 3. separator?
-
-" 1. Register syntax into syntax region
-" 2. Calculate text for each item & separators.
-" Separator syntax should have matches as well
-
-" User says:
 
 function! org#agenda#build(name) abort " {{{1
   if !has_key(g:org#agenda#views, a:name)
@@ -92,19 +21,17 @@ function! org#agenda#build(name) abort " {{{1
 
   doautocmd User OrgAgendaBuildPre
 
-  let hllist = []
   for section in g:org#agenda#views[a:name]
     let title = type(section.title) == v:t_string ? section.title : section.title()
     if has_key(section, 'generator')
       let items = function(section.generator)()
+    elseif has_key(section, 'files')
+      let items = org#agenda#items(section.files)
     else
-      let files = has_key(section, 'files') ? section.files : org#agenda#files()
-      let items = []
-      for f in values(org#outline#multi(files))
-        call extend(items, f.list)
-      endfor
-      let items = org#agenda#filter(items, section.filter)
+      let items = org#agenda#items()
     endif
+
+    let items = org#agenda#filter(items, section.filter)
 
     if has_key(section, 'sorter')
       let items = org#agenda#sort(items, section.sorter)
@@ -134,13 +61,12 @@ function! org#agenda#build(name) abort " {{{1
     endtry
 
     let justify = get(section, 'justify', [])
-    let hls = s:display_section(section.title, items, Display, Separator, justify)
-
-    call extend(hllist, hls)
+    call s:display_section(section.title, items, Display, Separator, justify)
   endfor
-  " setlocal modifiable | 1d | setlocal nomodifiable
-  return hllist
-  " todo: mapclear & set up mappings
+endfunction
+
+function! org#agenda#files(...) abort " {{{1
+  return map(get(g:, 'org#agenda#filelist', sort(glob(org#dir() . get(a:, 1, '/**/*.org'), 0, 1))), 'org#util#fname(v:val)' )
 endfunction
 
 function! org#agenda#filter(items, filter) abort " {{{1
@@ -155,6 +81,15 @@ function! org#agenda#filter(items, filter) abort " {{{1
   endtry
 endfunction
 
+function! org#agenda#items(...) abort " {{{1
+  let files = exists('a:1') ? a:1 : org#agenda#files()
+  let items = []
+  for f in values(org#outline#multi(files))
+    call extend(items, f.list)
+  endfor
+  return items
+endfunction
+
 function! org#agenda#sort(items, sorter) abort " {{{1
   let items = a:items
   if type(a:sorter) == v:t_string
@@ -165,6 +100,19 @@ function! org#agenda#sort(items, sorter) abort " {{{1
   try
     echoerr 'Agenda sorter must be string or funcref'
   endtry
+endfunction
+
+function! org#agenda#toqf(agenda) abort " {{{1
+  let s:lastDisplayed = a:agenda  " TODO change me to autocmds
+  let qfagenda = []
+  for item in a:agenda
+    let fname = fnamemodify(item.filename, ':t')
+    call add(qfagenda, {'lnum': item.lnum,
+        \ 'filename': bufname(item.bufnr),
+        \ 'module': fname,
+        \ 'text': item.todo . '	' . item.target[len(fname) + 1:] })
+  endfor
+  call setqflist(qfagenda)
 endfunction
 
 function! s:jump() abort " {{{1
@@ -191,14 +139,6 @@ function! s:datetime_separator(hl) abort dict " {{{1
   endif
   return []
 endfunction
-
-" TODO :
-" highlight link orgAgendaTitle Statement
-" highlight link orgAgendaDate Function
-" highlight link orgAgendaFile Identifier
-" highlight link orgAgendaPlan Comment
-" highlight link orgAgendaKeyword Todo
-" highlight link orgAgendaHeadline Normal
 
 function! s:display_section(title, items, display, separator, justify) abort " {{{1
   if &filetype != 'agenda'
@@ -284,7 +224,7 @@ function! s:display_section(title, items, display, separator, justify) abort " {
   setlocal modifiable
   call append('$', all_text)
   setlocal nomodifiable
-  return map(highlights, 'matchaddpos(v:val[0], v:val[1])')
+  call map(highlights, 'matchaddpos(v:val[0], v:val[1])')
 endfunction
 
 function! s:block_func(hl) abort " {{{1
@@ -311,23 +251,6 @@ function! s:datetime_func(hl) abort " {{{1
         \ ]
 endfunction
 
-function! org#agenda#toqf(agenda) abort " {{{1
-  let s:lastDisplayed = a:agenda  " TODO change me to autocmds
-  let qfagenda = []
-  for item in a:agenda
-    let fname = fnamemodify(item.filename, ':t')
-    call add(qfagenda, {'lnum': item.lnum,
-        \ 'filename': bufname(item.bufnr),
-        \ 'module': fname,
-        \ 'text': item.todo . '	' . item.target[len(fname) + 1:] })
-  endfor
-  call setqflist(qfagenda)
-endfunction
-
-function! org#agenda#files(...) abort " {{{1
-  return map(get(g:, 'org#agenda#filelist', sort(glob(org#dir() . get(a:, 1, '/**/*.org'), 0, 1))), 'org#util#fname(v:val)' )
-endfunction
-
 function! s:make_filter(str) abort " {{{1
   if count(a:str, "'") % 2 > 0
     try
@@ -336,7 +259,7 @@ function! s:make_filter(str) abort " {{{1
   endif
   let filterstr = [[]]
   let keywords = []
-  call map(values(org#agenda#full()), 'extend(keywords, v:val.keywords.all)')
+  call map(values(org#outline#multi(org#agenda#files())), 'extend(keywords, v:val.keywords.all)')
   let keywords = uniq(sort(keywords))
 
   " Get rid of spaces outside of quotes, and then loop through each item.
@@ -359,7 +282,7 @@ function! s:make_filter(str) abort " {{{1
     if index(['TIMESTAMP', 'DEADLINE', 'SCHEDULED', 'CLOSED'], name) >= 0
       " Check if it has name plan at all
       " If has comparison, compare.
-      let fs = 'has_key(v:val.plan, ' . name . ')'
+      let fs = 'has_key(v:val.plan, "' . name . '")'
       if !empty(comparison)
         let value = org#time#dict('monday')
         let value = {'start': value.start, 'end': value.end}
