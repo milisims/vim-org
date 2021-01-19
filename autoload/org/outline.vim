@@ -29,22 +29,14 @@ function! org#outline#complete(arglead, cmdline, curpos) abort " {{{1
   return g:org#outline#complete#cache
 endfunction
 
-function! s:build_complcache(str, hl) abort " {{{1
-  " a.org/b/c
-  let [headline, subtrees] = a:hl
-  let current = a:str . '/' . headline.item
-  call add(g:org#outline#complete#cache, current)
-  for st in subtrees
-    call s:build_complcache(current, st)
-  endfor
-endfunction
-
 function! org#outline#file(expr, ...) abort " {{{1
   " expr[, force]
   " If filename, orgdir is checked unless full path is presented
   let fname = org#util#fname(a:expr)
-  if empty(fname)
-    throw 'Org: no buffer or file matching "' . a:expr . '"'
+  if !filereadable(fname) && !bufexists(fname)
+    try
+      echoerr 'Org: no buffer or file matching "' . a:expr . '"'
+    endtry
   endif
   let force = get(a:, 1, 0)
   let mtime = getftime(fname)
@@ -53,54 +45,44 @@ function! org#outline#file(expr, ...) abort " {{{1
   endif
 
   let fsummary = {'mtime': mtime, 'kwmtime': mtime, 'keywords': {'todo': [], 'done': []}, 'subtrees': [], 'lnums': {}, 'tags': []}
-  " let shortname = substitute(fname, fnamemodify(org#dir(), ':p') . '/\?', '', '')
 
-  let starttabnr = tabpagenr()
-  execute 'noautocmd $tab split' fname
-  try
-    for line in filter(getline(1, '$'), 'v:val =~# ''^#+\u\+:''')
-      let [name, args] = matchlist(line, '^#+\(\u\+\):\s*\(.*\)')[1:2]
-      if name == 'TITLE'  " TODO put this into a handler
-        let fsummary.title = args
-      elseif name == 'FILETAGS'
-        let fsummary.tags = sort(filter(split(args, ':'), '!empty(v:val)'))
-      endif
-    endfor
-    let fsummary.keywords = s:update_keywords(bufnr(fname))
-    lvimgrep /^*/j %
-    " org#headline#get is the slowest component here
-    let headlines = map(getloclist(0), 'org#headline#get(v:val.lnum, fsummary.keywords)')
-    if !empty(fsummary.tags)
-      for hl in headlines
-        " TODO inherit tags here or in subtrees or in hl#get??
-        let hl.tags = uniq(extend(sort(hl.tags), fsummary.tags))
-      endfor
+  let bufn = bufadd(fname)
+  call bufload(bufn)
+  let text = getbufline(bufn, 1, '$')
+
+  for line in filter(copy(text), 'v:val =~# ''^#+\u\+:''')
+    let [name, args] = matchlist(line, '^#+\(\u\+\):\s*\(.*\)')[1:2]
+    if name == 'TITLE'  " TODO put this into a handler
+      let fsummary.title = args
+    elseif name == 'FILETAGS'
+      let fsummary.tags = sort(filter(split(args, ':'), '!empty(v:val)'))
     endif
-    let fsummary.subtrees = s:to_tree(headlines)
-  catch /^Vim\%((\a\+)\)\=:E480/
-  finally
-    quit
-    execute 'noautocmd normal!' starttabnr . 'gt'
-  endtry
+  endfor
+  let fsummary.keywords = s:update_keywords(bufn)
+
+  let lnum = match(text, '^*')
+  let headlines = []
+  while lnum >= 0
+    let next_lnum = match(text, '^*', lnum + 1)
+    let headline = s:get_headline(text[lnum : next_lnum], fsummary.keywords)
+    let headline.filename = fname
+    let headline.bufnr = bufn
+    let headline.lnum = lnum + 1  " lnum is actually the index, which is off by 1
+    " let headline. " add stuff from headline#get
+    let lnum = next_lnum
+    call add(headlines, headline)
+  endwhile
+
+  if !empty(fsummary.tags)
+    for hl in headlines
+      " TODO inherit tags here or in subtrees or in hl#get??
+      let hl.tags = uniq(extend(sort(hl.tags), fsummary.tags))
+    endfor
+  endif
+  let fsummary.subtrees = s:to_tree(headlines)  " Adds targets
   let s:outlineCache[fname] = fsummary
   return s:copy(s:outlineCache[fname])
-endfunction
 
-function! org#outline#multi(...) abort " {{{1
-  " TODO what is this? vs org#agenda"
-  let files = get(a:, 1, org#dir() . '/**/*.org')
-  if type(files) == v:t_string
-    let files = glob(files, 0, 1)
-  elseif type(files) != v:t_list
-    throw 'org: org#outline#multi arg 1 must be a glob string or list of files'
-  endif
-  let force = get(a:, 2, 0)
-  " TODO fix this glob
-  let outline = {}
-  for fname in files
-    let outline[fname] = org#outline#file(fname, force)
-  endfor
-  return outline
 endfunction
 
 function! org#outline#keywords(...) abort " {{{1
@@ -123,11 +105,37 @@ function! org#outline#keywords(...) abort " {{{1
   return s:outlineCache[fname].keywords
 endfunction
 
+function! org#outline#multi(...) abort " {{{1
+  let files = get(a:, 1, org#dir() . '/**/*.org')
+  if type(files) == v:t_string
+    let files = glob(files, 0, 1)
+  elseif type(files) != v:t_list
+    throw 'org: org#outline#multi arg 1 must be a glob string or list of files'
+  endif
+  let force = get(a:, 2, 0)
+  " TODO fix this glob
+  let outline = {}
+  for fname in files
+    let outline[fname] = org#outline#file(fname, force)
+  endfor
+  return outline
+endfunction
+
 function! s:add_cmd(subtree, parent) abort " {{{1
   let [headline, subtrees] = a:subtree
   let headline.cmd = a:parent.cmd . '/\V\^' . escape(headline.text, '/\') . '\$/'
   for st in subtrees
     call s:add_cmd(st, headline)
+  endfor
+endfunction
+
+function! s:build_complcache(str, hl) abort " {{{1
+  " a.org/b/c
+  let [headline, subtrees] = a:hl
+  let current = a:str . '/' . headline.item
+  call add(g:org#outline#complete#cache, current)
+  for st in subtrees
+    call s:build_complcache(current, st)
   endfor
 endfunction
 
@@ -152,6 +160,25 @@ function! s:flatten(subtree) abort " {{{1
   return flattened
 endfunction
 
+function! s:get_headline(text, keywords) abort " {{{2
+  let info = org#headline#parse(a:text[0], a:keywords)
+  let info.update = function('org#headline#update')
+  if len(a:text) == 1
+    return extend(info, {'plan': {}, 'properties': {}})
+  endif
+  let info.plan = org#plan#fromtext(a:text[1])  " Checks regex for us
+  " TODO export this to somewhere in property.vim
+  let start = match(a:text, ':PROPERTIES:')
+  let info.properties = {}
+  if start == 1 || start == 2
+    let end = match(a:text, ':END:')
+    if end > start + 1
+      let info.properties = org#property#fromtext(a:text[start : end])
+    endif
+  endif
+  return info
+endfunction
+
 function! s:keyword_highlight(kws) abort " {{{1
   let b:keywords = a:kws
   silent! syntax clear orgTodo orgDone
@@ -161,36 +188,6 @@ function! s:keyword_highlight(kws) abort " {{{1
   execute 'syntax keyword orgDone' join(a:kws.done) 'containedin=orgHeadlineKeywords,@orgHeadline'
 endfunction
 
-function! s:update_keywords(bn) abort " {{{1
-  " org_keywords augroup defined in plugin/org.vim, resets b:org_keywords
-  let lines = filter(getbufline(a:bn, 0, '$'), "v:val[:6] == '#+TODO:'")
-  let [todo, done] = [[], []]
-  for line in lines
-    let [t, d] = matchlist(line, g:org#regex#settings#todo)[1:2]
-    let [t, d] = [split(t), split(d)]
-    call extend(todo, t)
-    call extend(done, d)
-  endfor
-  let defaults = get(g:, 'org#keywords', {'todo': ['TODO'], 'done': ['DONE']})
-  let keywords = {'todo': empty(todo) ? defaults.todo : todo}
-  let keywords['done'] = empty(done) ? defaults.done : done
-  let keywords['all'] = keywords.todo + keywords.done
-  return keywords
-endfunction
-
-function! s:subtree(lnum, ...) abort " {{{1
-  let keywords = exists('a:1') ? a:1 : org#outline#keywords()
-  let headline = org#headline#get(a:lnum, keywords)
-
-  let [lnum, end] = org#section#range(headline.lnum)
-  let lnum = org#headline#find(lnum, 0, 'nWx')
-  let subtree = []
-  while lnum > 0 && lnum <= end
-    call add(subtree, s:subtree(lnum, keywords))
-    let lnum = org#headline#find(org#section#range(lnum)[1], 0, 'nWx')
-  endwhile
-  return [headline, subtree]
-endfunction
 
 function! s:to_tree(hls) abort " {{{1
   if empty(a:hls)
@@ -213,4 +210,21 @@ function! s:to_tree(hls) abort " {{{1
     let hl.target = fname . '/' . join(current_target, '/')
   endfor
   return current_tree[0][1]
+endfunction
+
+function! s:update_keywords(bn) abort " {{{1
+  " org_keywords augroup defined in plugin/org.vim, resets b:org_keywords
+  let lines = filter(getbufline(a:bn, 0, '$'), "v:val[:6] == '#+TODO:'")
+  let [todo, done] = [[], []]
+  for line in lines
+    let [t, d] = matchlist(line, g:org#regex#settings#todo)[1:2]
+    let [t, d] = [split(t), split(d)]
+    call extend(todo, t)
+    call extend(done, d)
+  endfor
+  let defaults = get(g:, 'org#keywords', {'todo': ['TODO'], 'done': ['DONE']})
+  let keywords = {'todo': empty(todo) ? defaults.todo : todo}
+  let keywords['done'] = empty(done) ? defaults.done : done
+  let keywords['all'] = keywords.todo + keywords.done
+  return keywords
 endfunction
