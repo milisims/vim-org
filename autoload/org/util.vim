@@ -55,5 +55,6 @@ function! org#util#complete(arglead, cmdline, curpos) abort " {{{1
 endfunction
 
 function! org#util#fname(expr) abort " {{{1
-  return resolve(fnamemodify(a:expr, ':p'))
+  let name = filereadable(a:expr) ? a:expr : org#dir() . '/' . a:expr
+  return resolve(fnamemodify(name, ':p'))
 endfunction
