@@ -124,8 +124,8 @@ hi link orgPropertyName       Identifier
 syn sync match orgSyncPropertyDrawer grouphere orgPropertyDrawer /\v^(:PROPERTIES:$)@=/
 " syntax sync match orgSync grouphere orgSection /\v^%(\*+)@=/
 
-syn match orgLink '\[\[[^][]*\]\]' contains=orgLinkDescription
-syn match orgLink '\[\[[^][]*\]\[[^][]*\]\]' contains=orgURI,orgLinkDescription
+syn match orgLink '\[\[[^][]*\]\]' containedin=ALL contains=orgLinkDescription
+syn match orgLink '\[\[[^][]*\]\[[^][]*\]\]' containedin=ALL contains=orgURI,orgLinkDescription
 syn match orgLinkDescription '\[[^][]*\]' contained
 syn match orgURI '\[[^][]*\]' contained nextgroup=orgLinkDescription conceal
 
