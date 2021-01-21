@@ -31,13 +31,18 @@ function! org#agenda#build(name) abort " {{{1
       let items = org#agenda#items()
     endif
 
-    let items = org#agenda#filter(items, section.filter)
+    try
+      let items = org#agenda#filter(items, section.filter)
+    catch /^Vim\%((\a\+)\)\=:E716/
+      if !has_key(section, 'generator')
+        echoerr 'Agenda sections need either a generator or a filter.'
+      endif
+    endtry
 
     if has_key(section, 'sorter')
       let items = org#agenda#sort(items, section.sorter)
     endif
 
-    let just = get(section, 'justify', [])
 
     let Display = get(section, 'display', 'block')
     if type(Display) == v:t_string && Display == 'block'
