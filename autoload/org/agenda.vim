@@ -32,7 +32,11 @@ function! org#agenda#build(name) abort " {{{1
     endif
 
     try
-      let items = org#agenda#filter(items, section.filter)
+      if type(section.filter) == v:t_string
+        call filter(items, org#agenda#filter(section.filter))
+      elseif type(section.filter) == v:t_func
+        call filter(items, section.filter)
+      endif
     catch /^Vim\%((\a\+)\)\=:E716/
       if !has_key(section, 'generator')
         echoerr 'Agenda sections need either a generator or a filter.'
@@ -40,7 +44,16 @@ function! org#agenda#build(name) abort " {{{1
     endtry
 
     if has_key(section, 'sorter')
-      let items = org#agenda#sort(items, section.sorter)
+      " let items = org#agenda#sort(items, section.sorter)
+      if type(section.sorter) == v:t_string
+        call sort(items, org#agenda#sorter(section.sorter))
+      elseif type(section.sorter) == v:t_func
+        call sort(items, section.sorter)
+      else
+        try
+          echoerr 'Agenda sorter must be string or funcref'
+        endtry
+      endif
     endif
 
 
@@ -72,18 +85,6 @@ endfunction
 
 function! org#agenda#files(...) abort " {{{1
   return map(get(g:, 'org#agenda#filelist', sort(glob(org#dir() . get(a:, 1, '/**/*.org'), 0, 1))), 'org#util#fname(v:val)' )
-endfunction
-
-function! org#agenda#filter(items, filter) abort " {{{1
-  let items = a:items
-  if type(a:filter) == v:t_string
-    return filter(items, s:make_filter(a:filter))
-  elseif type(a:filter) == v:t_func
-    return filter(items, a:filter)
-  endif
-  try
-    echoerr 'Agenda filter must be string or funcref'
-  endtry
 endfunction
 
 function! org#agenda#items(...) abort " {{{1
@@ -256,7 +257,7 @@ function! s:datetime_func(hl) abort " {{{1
         \ ]
 endfunction
 
-function! s:make_filter(str) abort " {{{1
+function! org#agenda#filter(str) abort " {{{1
   if count(a:str, "'") % 2 > 0
     try
       echoerr 'Unbalanced single quotes in search string: "' . a:str . '"'
@@ -350,7 +351,7 @@ function! s:make_filter(str) abort " {{{1
   return '(' . join(map(filterstr, 'join(v:val, " && " )'), ') || (') . ')'
 endfunction
 
-function! s:make_sorter(str) abort " {{{1
+function! org#agenda#sorter(str) abort " {{{1
   " + is ascending, - is descending. Assume property, items without property do what?
   " Must be +A-b-c+d, no other options. Just: sort based on A, then b, then c, then d.
   if count(a:str, "'") % 2 > 0
