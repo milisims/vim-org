@@ -290,7 +290,7 @@ function! org#agenda#filter(str) abort " {{{1
       " If has comparison, compare.
       let fs = 'has_key(v:val.plan, "' . name . '")'
       if !empty(comparison)
-        let value = org#time#dict('monday')
+        let value = org#time#dict(value)
         let value = {'start': value.start, 'end': value.end}
         let fs = fs . ' && org#time#diff(v:val.plan.' . name . ', ' . string(value) . ')'
         let fs = '(' . fs . ' ' . comparison . ' 0)'
@@ -299,7 +299,7 @@ function! org#agenda#filter(str) abort " {{{1
 
     elseif name == 'PLAN'
       if !empty(comparison)
-        let value = org#time#dict('monday')
+        let value = org#time#dict(value)
         let value = {'start': value.start, 'end': value.end}
         let fs = 'org#plan#within(v:val.plan, ' . string(value) .  ')'
       else
