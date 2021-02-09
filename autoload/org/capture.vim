@@ -100,7 +100,7 @@ function! org#capture#get_target(template) abort " {{{1
 
   " returns: string or dict. String if just a filename, dict of org#headline#get if specified.
   if !has_key(a:template, 'target')
-    return org#headline#fromtarget(g:org#inbox)
+    return org#headline#fromtarget(org#util#fname(g:org#inbox))
   elseif type(a:template.target) == v:t_string
     return org#headline#fromtarget(a:template.target, 1)
   elseif type(a:template.target) == v:t_func
