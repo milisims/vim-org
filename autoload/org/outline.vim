@@ -170,10 +170,10 @@ function! s:get_headline(text, keywords) abort " {{{2
   " TODO export this to somewhere in property.vim
   let start = match(a:text, ':PROPERTIES:')
   let info.properties = {}
-  if start == 1 || start == 2
+  if start == (1 + !empty(info.plan))
     let end = match(a:text, ':END:')
     if end > start + 1
-      let info.properties = org#property#fromtext(a:text[start : end])
+      let info.properties = org#property#fromtext(a:text[start + 1 : end - 1])
     endif
   endif
   return info
