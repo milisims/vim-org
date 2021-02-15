@@ -359,6 +359,9 @@ let s:filter_cache = {}
 function! org#agenda#sorter(str) abort " {{{1
   " + is ascending, - is descending. Assume property, items without property do what?
   " Must be +A-b-c+d, no other options. Just: sort based on A, then b, then c, then d.
+  if has_key(s:Sorter_cache, a:str)
+    return s:Sorter_cache[a:str]
+  endif
   if count(a:str, "'") % 2 > 0
     try
       echoerr 'Unbalanced single quotes in search string: "' . a:str . '"'
@@ -387,19 +390,24 @@ function! org#agenda#sorter(str) abort " {{{1
     call add(sortlist, sortstr)
 
   endfor
+
   if len(sortlist) == 1
-    return eval('{hl1, hl2 -> ' . substitute(sortlist[0], 'a:', '', 'g') . '}')
+    let s:Sorter_cache[a:str] = eval('{hl1, hl2 -> ' . sortlist[0] . '}')
+  else
+    function s:sorter{len(s:Sorter_cache)}(hl1, hl2) closure
+      let [hl1, hl2] = [a:hl1, a:hl2]
+      for sorter in sortlist
+        let diff = eval(sorter)
+        if diff != 0
+          return diff
+        endif
+      endfor
+      return 0
+    endfunction
+    let s:Sorter_cache[a:str] = funcref('s:sorter' . len(s:Sorter_cache))
   endif
-  function s:sortfunc(hl1, hl2) closure
-    let [hl1, hl2] = [a:hl1, a:hl2]
-    for sorter in sortlist
-      let diff = eval(sorter)
-      if diff != 0
-        return diff
-      endif
-    endfor
-    return 0
-  endfunction
-  return funcref('s:sortfunc')
+
+  return s:Sorter_cache[a:str]
 endfunction
+let s:Sorter_cache = {}
 
