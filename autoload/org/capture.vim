@@ -174,7 +174,8 @@ function! s:add_entry(target, text, prepend) abort " {{{1
   let lnum = org#section#range(a:target.lnum)[1]
   let lnum = prevnonblank(lnum)  " TODO + 1, check for edge
   let text = type(a:text) == v:t_string ? [a:text] : a:text
-  call append(lnum, text)
+  call append(lnum, [''] + text)
+  let lnum += 1
   if has_key(a:target, 'level')
     let range = (lnum + 1 + empty(getline(lnum))). ',' . (lnum + len(text))
     " FIXME org#shift should work on this.
