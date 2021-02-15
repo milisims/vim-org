@@ -148,8 +148,9 @@ function! org#plan#get(lnum, ...) abort " {{{1
   return extend(plan, inheritance, 'keep')
 endfunction
 
+let s:planregex = '\v^\s*%(%(%(DEADLINE:|CLOSED:|SCHEDULED:)\s*)?%([<\[]' . g:org#regex#timestamp#full0 . '[>\]]))+\s*$'
 function! org#plan#fromtext(text) abort " {{{1
-  if a:text !~# g:org#regex#timestamp#datetime0
+  if a:text !~# s:planregex
     return {}
   endif
   let text = split(a:text, '\v[:><[\]]\zs\s+')
