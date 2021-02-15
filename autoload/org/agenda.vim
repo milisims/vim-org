@@ -258,6 +258,9 @@ function! s:datetime_func(hl) abort " {{{1
 endfunction
 
 function! org#agenda#filter(str) abort " {{{1
+  if has_key(s:filter_cache, a:str)
+    return s:filter_cache[a:str]
+  endif
   if count(a:str, "'") % 2 > 0
     try
       echoerr 'Unbalanced single quotes in search string: "' . a:str . '"'
@@ -348,8 +351,10 @@ function! org#agenda#filter(str) abort " {{{1
   if empty(filterstr)
     return '1'
   endif
-  return '(' . join(map(filterstr, 'join(v:val, " && " )'), ') || (') . ')'
+  let s:filter_cache[a:str] = '(' . join(map(filterstr, 'join(v:val, " && " )'), ') || (') . ')'
+  return s:filter_cache[a:str]
 endfunction
+let s:filter_cache = {}
 
 function! org#agenda#sorter(str) abort " {{{1
   " + is ascending, - is descending. Assume property, items without property do what?
