@@ -48,6 +48,7 @@ augroup org_agenda
 augroup END
 
 command! -nargs=? Capture call org#capture('c')
+command! -nargs=+ View call org#agenda#view(<q-args>)
 
 " TODO:
 "  Commands:

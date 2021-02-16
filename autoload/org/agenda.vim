@@ -1,24 +1,26 @@
 let g:org#agenda#wincmd = get(g:, 'org#agenda#wincmd', 'keepalt topleft vsplit')
 let g:org#agenda#jump = get(g:, 'org#agenda#jump', 'edit')
 
+function! s:make_buffer(name) abort " {{{1
+  let bufnum = bufnr(a:name, 1) " creates buffer
+  if type(g:org#agenda#wincmd) == v:t_func
+    call g:org#agenda#wincmd(a:name)
+  else
+    execute 'keepalt' g:org#agenda#wincmd a:name
+  endif
+  " TODO org.view ?
+  setfiletype agenda
+  let b:agenda_name = a:name
+  nnoremap <buffer> <Plug>(org-agenda-goto-headline) :call <SID>jump()<Cr>
+  autocmd org_agenda BufWinLeave <buffer> call clearmatches()
+endfunction
+
 function! org#agenda#build(name) abort " {{{1
   if !has_key(g:org#agenda#views, a:name)
     throw 'Org: no agenda view with name ' . a:name . ' to build.'
   endif
 
-  let bufname = 'Agenda_' . a:name
-  let bufnum = bufnr(bufname, 1)
-
-  if type(g:org#agenda#wincmd) == v:t_func
-    call g:org#agenda#wincmd(bufname)
-  else
-    execute 'keepalt' g:org#agenda#wincmd bufname
-  endif
-  setfiletype agenda
-  let b:agenda_name = a:name
-  nnoremap <buffer> <Plug>(org-agenda-goto-headline) :call <SID>jump()<Cr>
-  autocmd org_agenda BufWinLeave <buffer> call clearmatches()
-
+  call s:make_buffer('Agenda_' . a:name)
   doautocmd User OrgAgendaBuildPre
 
   for section in g:org#agenda#views[a:name]
@@ -81,6 +83,13 @@ function! org#agenda#build(name) abort " {{{1
     let justify = get(section, 'justify', [])
     call s:display_section(section.title, items, Display, Separator, justify)
   endfor
+endfunction
+
+function! org#agenda#view(filterstr) abort " {{{1
+  call s:make_buffer('View')
+  let b:items = org#agenda#items()
+  call filter(b:items, org#agenda#filter(a:filterstr))
+  call s:display_section('', b:items, function('s:block_func'), {}, [])
 endfunction
 
 function! org#agenda#files(...) abort " {{{1
