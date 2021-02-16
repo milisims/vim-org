@@ -1,5 +1,9 @@
 let s:outlineCache = {}
 
+augroup org_load
+  autocmd!
+augroup END
+
 function! org#outline#complete(arglead, cmdline, curpos) abort " {{{1
   " See :h :command-completion-customlist
   " To be used with customlist, not custom. Works with spaces better, and regex are nice.
@@ -48,6 +52,10 @@ function! org#outline#file(expr, ...) abort " {{{1
 
   let bufn = bufadd(fname)
   call bufload(bufn)
+
+  " Make sure the filetype still loads properly when the user opens the buffer
+  execute 'autocmd org_load BufEnter' fname '++once setfiletype org'
+
   let text = getbufline(bufn, 1, '$')
 
   for line in filter(copy(text), 'v:val =~# ''^#+\u\+:''')
