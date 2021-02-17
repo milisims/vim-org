@@ -88,7 +88,27 @@ endfunction
 function! org#agenda#view(filterstr) abort " {{{1
   call s:make_buffer('View')
   let b:items = org#agenda#items()
-  call filter(b:items, org#agenda#filter(a:filterstr))
+  call org#agenda#filterview(a:filterstr)
+endfunction
+
+function! org#agenda#filterview(filterstr) abort " {{{1
+  try
+    let b:items = filter(b:items, org#agenda#filter(a:filterstr))
+  catch /^Vim\%((\a\+)\)\=:E716/
+    echoerr 'No items to filter, create a :View first, and be in the buffer'
+  endtry
+  setlocal modifiable
+  call deletebufline(bufnr(), 1, '$')
+  setlocal nomodifiable
+  call s:display_section('', b:items, function('s:block_func'), {}, [])
+endfunction
+
+function! org#agenda#sortview(sortstr) abort " {{{1
+  try
+    call sort(b:items, org#agenda#sorter(a:sortstr))
+  catch /^Vim\%((\a\+)\)\=:E716/
+    echoerr 'No items to sort, create a :View first, and be in the buffer'
+  endtry
   call s:display_section('', b:items, function('s:block_func'), {}, [])
 endfunction
 
@@ -393,7 +413,7 @@ function! org#agenda#sorter(str) abort " {{{1
     elseif name == 'PLAN'
       let sortstr = 'org#time#diff(org#plan#nearest(' . a . '.plan), org#plan#nearest(' . b . '.plan))'
     else
-      let sortstr = a . '.' . name . ' - ' . b . '.' . name
+      let sortstr = a . '.properties.' . name . ' - ' . b . '.properties.' . name
     endif
 
     call add(sortlist, sortstr)
