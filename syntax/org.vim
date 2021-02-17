@@ -251,11 +251,13 @@ hi link orgComment Comment
 syn region orgBold      matchgroup=orgBoldEnds      start=/\(\s\|^\)\zs\*\ze[^ \t*]/ end=/[^ \t*]\zs\*\ze\(\W\|$\)/ containedin=ALL contains=NONE concealends oneline
 syn region orgItalic    matchgroup=orgItalicEnds    start=/\(\s\|^\)\zs\/\ze[^ \t/]/ end=/[^ \t/]\zs\/\ze\(\W\|$\)/ containedin=ALL contains=NONE concealends oneline
 syn region orgUnderline matchgroup=orgUnderlineEnds start=/\(\s\|^\)\zs_\ze[^ \t_]/  end=/[^ \t_]\zs_\ze\(\W\|$\)/  containedin=ALL contains=NONE concealends oneline
-syn region orgVerbatim  matchgroup=orgVerbatimEnds  start=/\(\s\|^\)\zs=\ze[^ \t=]/  end=/[^ \t=]\zs=\ze\(\W\|$\)/  contains=NONE   concealends oneline
+syn region orgVerbatim  matchgroup=orgVerbatimEnds  start=/\(\s\|^\)\zs=\ze[^ \t=]/  end=/[^ \t=]\zs=\ze\(\W\|$\)/  containedin=ALL contains=NONE concealends oneline
+syn region orgStrikethr matchgroup=orgStrikethrEnds start=/\(\s\|^\)\zs\~\ze[^ \t~]/ end=/[^ \t~]\zs\~\ze\(\W\|$\)/ containedin=ALL contains=NONE concealends oneline
 
-hi orgBold      cterm=bold      gui=bold
-hi orgItalic    cterm=italic    gui=italic
-hi orgUnderline cterm=underline gui=underline
+hi orgBold      cterm=bold          gui=bold
+hi orgItalic    cterm=italic        gui=italic
+hi orgUnderline cterm=underline     gui=underline
+hi orgStrikethr cterm=strikethrough gui=strikethrough
 hi link orgVerbatim Normal
 
 
