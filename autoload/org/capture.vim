@@ -42,6 +42,14 @@ let s:default_opts = {
       \ 'save': 1,
       \ }
 
+function! org#capture#complete(...) abort " {{{1
+  return join(map(values(g:org#capture#templates), 'v:val.description'), "\n")
+endfunction
+
+function! org#capture#name(name) abort " {{{1
+  call org#capture#do(filter(values(g:org#capture#templates), 'v:val.description =~? a:name')[0])
+endfunction
+
 function! org#capture#do(capture) abort " {{{1
   let capture = copy(a:capture)
   let capture.opts = extend(copy(get(capture, 'opts', {})), g:org#capture#opts, 'keep')

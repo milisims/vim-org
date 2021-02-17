@@ -39,7 +39,6 @@ augroup org_keywords
 augroup END
 
 augroup org_completion
-  " setup for agenda#completion
   autocmd!
 augroup END
 
@@ -47,18 +46,5 @@ augroup org_agenda
   autocmd!
 augroup END
 
-command! -nargs=? Capture call org#capture()
+command! -nargs=+ -complete=custom,org#capture#complete Capture call org#capture#name(<q-args>)
 command! -nargs=+ View call org#agenda#view(<q-args>)
-
-" TODO:
-"  Commands:
-"  Agenda
-"  Refile
-"  Plan
-"  Capture
-
-" TODO:
-" Formatting:
-"   List renumber
-"   Tables
-"   Spacing headlines
