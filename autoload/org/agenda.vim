@@ -225,7 +225,7 @@ function! s:display_section(title, items, display, separator, justify) abort " {
     " Calculate justification, if any, and column for highlighting
     let txt = '  '
     for ix in range(cols)
-      let spacing = colwidth[ix] - len(text[ix])
+      let spacing = colwidth[ix] - strdisplaywidth(text[ix])
       if just[ix] == 'l'
         if txt[len(txt) - 1] != ' '
           let txt .= ' '
