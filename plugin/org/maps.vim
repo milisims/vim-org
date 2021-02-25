@@ -50,3 +50,5 @@ nnoremap <silent> <Plug>(org-headline-open-below) :call org#edit#openhl(1)<CR>
 
 nnoremap <silent> <Plug>(org-capture) :call org#capture()<Cr>
 xnoremap <silent> <Plug>(org-capture) :call org#capture()<Cr>
+
+nnoremap <silent> <Plug>(org-follow-link) :execute org#link#atcursor()<Cr>
