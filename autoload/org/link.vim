@@ -42,6 +42,10 @@ function! s:weblink(uri) abort " {{{1
   return s:openexternal(a:uri)
 endfunction
 
+function! s:doilink(uri) abort " {{{1
+  return s:openexternal(substitute(a:uri, '^doi:', 'https://doi.org/', ''))
+endfunction
+
 function! s:orglink(uri) abort " {{{1
   let [file, type, info] = matchlist(a:uri, '\v^file:(.{-})%(::([#*])?(.*))?$')[1:3]
   if empty(info)             " just file
@@ -133,6 +137,7 @@ let s:external = ['jpe?g', 'tiff?', 'gif', 'bmp', 'png', 'exif', 'svg', 'pdf', '
 let s:linktypes = [
       \ #{type: 'web', match: '\v^%(git\@|https?:)', follow: function('s:weblink')},
       \ #{type: 'org', match: '\v^file:.*\.org%(::.*)?', follow: function('s:orglink')},
+      \ #{type: 'doi', match: '\v^doi:10\..+', follow: function('s:doilink')},
       \ #{type: 'file', match: '\v^file:.*\.%(::.*)?', follow: function('s:filelink')},
       \ #{type: 'external', match: function('s:externalmatch'), follow: function('s:filelink')},
       \ ]
